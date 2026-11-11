@@ -66,9 +66,9 @@ public partial class MainWindow
         foreach (var view in profileViews)
         {
             var panel = new StackPanel();
-            panel.Children.Add(new TextBlock { Text = "Review rhythm · " + view.Profile.Name, FontSize = 20, TextWrapping = TextWrapping.Wrap });
-            panel.Children.Add(new TextBlock { Text = $"{view.Analysis.TotalAnswers:N0} rated answers · all history · midnight-based calendar weeks\n{view.Data.Scope}",
-                Foreground = (System.Windows.Media.Brush)FindResource("Muted"), FontSize = 12, Margin = new Thickness(0, 6, 0, 12), TextWrapping = TextWrapping.Wrap });
+            panel.Children.Add(Typography.WithContentSize(new TextBlock { Text = "Review rhythm · " + view.Profile.Name, TextWrapping = TextWrapping.Wrap }, 20));
+            panel.Children.Add(Typography.WithContentSize(new TextBlock { Text = $"{view.Analysis.TotalAnswers:N0} rated answers · all history · midnight-based calendar weeks\n{view.Data.Scope}",
+                Foreground = (System.Windows.Media.Brush)FindResource("Muted"), Margin = new Thickness(0, 6, 0, 12), TextWrapping = TextWrapping.Wrap }, 12));
             var chart = new ReviewChart { Height = 180 };
             chart.SetRows(view.Analysis.Daily, true);
             panel.Children.Add(chart);

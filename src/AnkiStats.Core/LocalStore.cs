@@ -21,7 +21,7 @@ public sealed class LocalStore
         var db = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = Path.Combine(Root, "analysis.sqlite"), Pooling = false }.ToString());
         db.Open();
         using var cmd = db.CreateCommand();
-        cmd.CommandText = "CREATE TABLE IF NOT EXISTS cache (id INTEGER PRIMARY KEY CHECK(id=1), payload BLOB NOT NULL); CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL); CREATE TABLE IF NOT EXISTS insight_history (collection TEXT NOT NULL, day TEXT NOT NULL, template TEXT NOT NULL, PRIMARY KEY(collection,day));";
+        cmd.CommandText = "CREATE TABLE IF NOT EXISTS cache (id INTEGER PRIMARY KEY CHECK(id=1), payload BLOB NOT NULL); CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL); CREATE TABLE IF NOT EXISTS appearance (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL); CREATE TABLE IF NOT EXISTS insight_history (collection TEXT NOT NULL, day TEXT NOT NULL, template TEXT NOT NULL, PRIMARY KEY(collection,day));";
         cmd.ExecuteNonQuery(); return db;
     }
     public Settings? LoadSettings()
@@ -34,6 +34,18 @@ public sealed class LocalStore
         using var db = Open(); using var cmd = db.CreateCommand();
         cmd.CommandText = "INSERT INTO settings(id,payload) VALUES(1,$payload) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload";
         cmd.Parameters.AddWithValue("$payload", JsonSerializer.Serialize(settings)); cmd.ExecuteNonQuery();
+    }
+    public AppearanceSettings LoadAppearance()
+    {
+        using var db = Open(); using var cmd = db.CreateCommand();
+        cmd.CommandText = "SELECT payload FROM appearance WHERE id=1";
+        return cmd.ExecuteScalar() is string json ? JsonSerializer.Deserialize<AppearanceSettings>(json) ?? new() : new();
+    }
+    public void SaveAppearance(AppearanceSettings appearance)
+    {
+        using var db = Open(); using var cmd = db.CreateCommand();
+        cmd.CommandText = "INSERT INTO appearance(id,payload) VALUES(1,$payload) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload";
+        cmd.Parameters.AddWithValue("$payload", JsonSerializer.Serialize(appearance)); cmd.ExecuteNonQuery();
     }
     public ImportedCollection? LoadCache(string collectionKey)
     {

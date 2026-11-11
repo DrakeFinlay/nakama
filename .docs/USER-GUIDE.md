@@ -109,6 +109,15 @@ Learning Patterns findings are connections to inspect, not proof of why a card
 was difficult; cross-deck comparisons use both imported Japanese/Kanji trees even
 when another active selection scopes the card list.
 
+## Customize font sizes
+
+Open **Settings → Font sizes** to adjust **Sidebar**, **Inner tabs**, **Page
+content**, and **Tables** independently. Each slider previews changes live from
+75% to 150% in 1% steps. **Save font sizes** keeps the current sizes for future
+sessions without refreshing Anki. To restore the original sizes, choose **Reset
+to defaults** and save. Chart and calendar labels drawn inside the graphics
+retain their own sizing.
+
 ## Use Word Coverage
 
 Select **Download / reinstall reference data** once. This installs public

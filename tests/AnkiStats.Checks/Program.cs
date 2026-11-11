@@ -199,11 +199,15 @@ try
     Check(dstResult.Buckets[0].Answers == 2 && dstResult.Daily.Count == 1, "DST repeated hour");
 
     var store = new LocalStore(Path.Combine(sandbox, "store"));
+    Check(store.LoadAppearance() == new AppearanceSettings(), "existing stores start with default font sizes");
+    var appearance = new AppearanceSettings(82, 113, 129, 148);
+    store.SaveAppearance(appearance);
     store.SaveCache(data);
     Check(store.LoadCache("synthetic")?.Reviews.Count == data.Reviews.Count, "cache roundtrip");
     Check(store.LoadCache("other") is null, "cache cannot cross collection identity");
     store.SaveCache(data, selection);
     Check(store.LoadSettings()?.DeckRules.Count == 2, "settings and results persisted together");
+    Check(new LocalStore(store.Root).LoadAppearance() == appearance, "font sizes persist independently of collection settings and refreshes");
     var csvPath = Path.Combine(sandbox, "synthetic.csv");
     CsvExport.Write(csvPath, [new object?[] { "報いる", "a,b", "=1+1" }]);
     Check(File.ReadAllText(csvPath).Contains("報いる") && File.ReadAllText(csvPath).Contains("'=1+1"), "UTF-8 Japanese export and formula protection");

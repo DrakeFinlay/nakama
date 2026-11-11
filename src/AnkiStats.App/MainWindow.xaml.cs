@@ -59,6 +59,7 @@ public partial class MainWindow : Window
         await Guard(async () =>
         {
             store = new LocalStore();
+            LoadAppearance();
             InitializeMedia();
             UpdateSourceIndicator();
             try { settings = store.LoadSettings(); }

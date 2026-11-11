@@ -158,8 +158,8 @@ public partial class MainWindow
             var artwork = CreateMediaCover(corpus, false);
             artwork.VerticalAlignment = VerticalAlignment.Top;
             var panel = new StackPanel { Margin = new Thickness(16, 8, 8, 8), VerticalAlignment = VerticalAlignment.Center };
-            panel.Children.Add(new TextBlock { Text = corpus.Title, FontSize = 18, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
-            panel.Children.Add(new TextBlock { Text = summary is null ? "Compare Anki to see mining counts" : $"{summary.Remaining:N0} eligible remaining\n{summary.Other:N0} other unique words\n{summary.Percent} · {summary.Present:N0} / {summary.Eligible:N0}\n{summary.NeedsReview:N0} possible Anki matches\n{summary.Unresolved:N0} unresolved source forms", FontSize = 16, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12), Foreground = (Brush)FindResource("Muted") });
+            panel.Children.Add(Typography.WithContentSize(new TextBlock { Text = corpus.Title, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap }, 18));
+            panel.Children.Add(Typography.WithContentSize(new TextBlock { Text = summary is null ? "Compare Anki to see mining counts" : $"{summary.Remaining:N0} eligible remaining\n{summary.Other:N0} other unique words\n{summary.Percent} · {summary.Present:N0} / {summary.Eligible:N0}\n{summary.NeedsReview:N0} possible Anki matches\n{summary.Unresolved:N0} unresolved source forms", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12), Foreground = (Brush)FindResource("Muted") }, 16));
             AddMediaShelfPicker(panel, corpus, false);
             Grid.SetColumn(panel, 1); tile.Children.Add(artwork); tile.Children.Add(panel);
             tile.SizeChanged += (_, _) =>
@@ -171,7 +171,7 @@ public partial class MainWindow
             (corpus.State == MediaShelves.Completed ? CompletedMediaCards : PlannedMediaCards).Children.Add(tile);
         }
         CurrentMediaCards.Columns = CurrentMediaCards.Children.Count > 1 && CurrentMediaCards.ActualWidth >= 1500 ? 2 : 1;
-        if (CurrentMediaCards.Children.Count == 0) CurrentMediaCards.Children.Add(new TextBlock { Text = "Choose a title from Planned to start reading, or add a new title.", FontSize = 24, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(32), VerticalAlignment = VerticalAlignment.Center });
+        if (CurrentMediaCards.Children.Count == 0) CurrentMediaCards.Children.Add(Typography.WithContentSize(new TextBlock { Text = "Choose a title from Planned to start reading, or add a new title.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(32), VerticalAlignment = VerticalAlignment.Center }, 24));
         if (PlannedMediaCards.Children.Count == 0) PlannedMediaCards.Children.Add(new TextBlock { Text = "Build your reading shortlist here. New downloads go to Planned by default.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(20) });
         if (CompletedMediaCards.Children.Count == 0) CompletedMediaCards.Children.Add(new TextBlock { Text = "Completed titles will appear here.", Margin = new Thickness(20) });
         ShowMediaWords();
@@ -186,8 +186,8 @@ public partial class MainWindow
     };
     private void AddMediaShelfPicker(Panel panel, MediaCorpus corpus, bool featured)
     {
-        panel.Children.Add(new TextBlock { Text = "Shelf", FontSize = featured ? 18 : 12, Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 8, 0, 4) });
-        var picker = new ComboBox { ItemsSource = MediaShelves.All, SelectedItem = corpus.State, FontSize = featured ? 20 : 14, MinWidth = 160, HorizontalAlignment = HorizontalAlignment.Left };
+        panel.Children.Add(Typography.WithContentSize(new TextBlock { Text = "Shelf", Foreground = (Brush)FindResource("Muted"), Margin = new Thickness(0, 8, 0, 4) }, featured ? 18 : 12));
+        var picker = Typography.WithContentSize(new ComboBox { ItemsSource = MediaShelves.All, SelectedItem = corpus.State, MinWidth = 160, HorizontalAlignment = HorizontalAlignment.Left }, featured ? 20 : 14);
         System.Windows.Automation.AutomationProperties.SetName(picker, "Shelf for " + corpus.Title);
         picker.SelectionChanged += async (_, _) =>
         {
@@ -207,31 +207,31 @@ public partial class MainWindow
         layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         var cover = CreateMediaCover(corpus, true);
         var detail = new StackPanel { Margin = new Thickness(32, 16, 16, 16), VerticalAlignment = VerticalAlignment.Center };
-        var title = new TextBlock { Text = corpus.Title, FontSize = 38, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) };
+        var title = Typography.WithContentSize(new TextBlock { Text = corpus.Title, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) }, 38);
         detail.Children.Add(title);
-        detail.Children.Add(new TextBlock { Text = corpus.Edition, FontSize = 18, Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 20) });
+        detail.Children.Add(Typography.WithContentSize(new TextBlock { Text = corpus.Edition, Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 20) }, 18));
         var metrics = new UniformGrid { Columns = 2 };
         var numbers = new List<TextBlock>();
         void Metric(string label, string value)
         {
             var content = new StackPanel { Margin = new Thickness(0, 0, 20, 20) };
-            var number = new TextBlock { Text = value, FontSize = 40, FontWeight = FontWeights.SemiBold };
+            var number = Typography.WithContentSize(new TextBlock { Text = value, FontWeight = FontWeights.SemiBold }, 40);
             numbers.Add(number); content.Children.Add(number);
-            content.Children.Add(new TextBlock { Text = label, FontSize = 18, Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap });
+            content.Children.Add(Typography.WithContentSize(new TextBlock { Text = label, Foreground = (Brush)FindResource("Muted"), TextWrapping = TextWrapping.Wrap }, 18));
             metrics.Children.Add(content);
         }
         Metric("Common / JLPT words remaining", summary?.Remaining.ToString("N0") ?? "—");
         Metric("Other unique words", summary?.Other.ToString("N0") ?? "—");
         detail.Children.Add(metrics);
-        var percent = new TextBlock { Text = summary?.Percent ?? "Compare Anki to see mining progress", FontSize = 28, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 8) };
+        var percent = Typography.WithContentSize(new TextBlock { Text = summary?.Percent ?? "Compare Anki to see mining progress", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 8) }, 28);
         detail.Children.Add(percent);
         detail.Children.Add(new ProgressBar { Minimum = 0, Maximum = Math.Max(1, summary?.Eligible ?? 0), Value = summary?.Present ?? 0, Height = 12, Foreground = new SolidColorBrush(Color.FromRgb(109, 169, 225)), Margin = new Thickness(0, 0, 0, 12) });
-        detail.Children.Add(new TextBlock { Text = summary is null ? "Whole-title vocabulary opportunities" : $"{summary.Present:N0} of {summary.Eligible:N0} eligible words in Anki\n{summary.NeedsReview:N0} possible Anki matches · {summary.Unresolved:N0} unresolved source forms", FontSize = 18, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)FindResource("Muted") });
-        var inspect = new Button { Content = "Explore vocabulary →", FontSize = 20, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 20, 0, 8) };
+        detail.Children.Add(Typography.WithContentSize(new TextBlock { Text = summary is null ? "Whole-title vocabulary opportunities" : $"{summary.Present:N0} of {summary.Eligible:N0} eligible words in Anki\n{summary.NeedsReview:N0} possible Anki matches · {summary.Unresolved:N0} unresolved source forms", TextWrapping = TextWrapping.Wrap, Foreground = (Brush)FindResource("Muted") }, 18));
+        var inspect = Typography.WithContentSize(new Button { Content = "Explore vocabulary →", HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 20, 0, 8) }, 20);
         inspect.Click += (_, _) => OpenMediaWords(corpus);
         detail.Children.Add(inspect); AddMediaShelfPicker(detail, corpus, true);
         layout.Children.Add(cover); layout.Children.Add(detail);
-        layout.SizeChanged += (_, _) =>
+        layout.SizeChanged += (_, e) =>
         {
             var narrow = layout.ActualWidth < 650;
             Grid.SetColumn(detail, narrow ? 0 : 1); Grid.SetRow(detail, narrow ? 1 : 0);
@@ -243,9 +243,12 @@ public partial class MainWindow
             cover.Height = Math.Min(availableHeight, availableWidth / ratio);
             cover.Width = cover.Height * ratio;
             detail.Margin = narrow ? new Thickness(12, 24, 12, 12) : new Thickness(32, 16, 16, 16);
-            title.FontSize = Math.Clamp(layout.ActualWidth / 25, 30, 64);
-            foreach (var number in numbers) number.FontSize = Math.Clamp(layout.ActualWidth / 28, 36, 72);
-            percent.FontSize = Math.Clamp(layout.ActualWidth / 40, 26, 42);
+            if (e.WidthChanged)
+            {
+                Typography.WithContentSize(title, Math.Clamp(e.NewSize.Width / 25, 30, 64));
+                foreach (var number in numbers) Typography.WithContentSize(number, Math.Clamp(e.NewSize.Width / 28, 36, 72));
+                Typography.WithContentSize(percent, Math.Clamp(e.NewSize.Width / 40, 26, 42));
+            }
         };
         return new Border { Child = layout, Background = new SolidColorBrush(Color.FromRgb(37, 40, 48)), CornerRadius = new CornerRadius(12), Margin = new Thickness(8) };
     }
@@ -264,7 +267,7 @@ public partial class MainWindow
                 try { var bitmap = new BitmapImage(); bitmap.BeginInit(); bitmap.CacheOption = BitmapCacheOption.OnLoad; bitmap.UriSource = new Uri(coverPath); bitmap.EndInit(); bitmap.Freeze(); aspect = (double)bitmap.PixelWidth / bitmap.PixelHeight; coverGrid.Children.Add(new Image { Source = bitmap, Stretch = Stretch.Uniform }); }
                 catch (Exception) { /* Artwork is optional; the title remains usable. */ }
             }
-            else coverGrid.Children.Add(new TextBlock { Text = corpus.MediaType == 7 ? "VN" : corpus.MediaType == 1 ? "ANIME" : "BOOK", FontSize = 30, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+            else coverGrid.Children.Add(Typography.WithContentSize(new TextBlock { Text = corpus.MediaType == 7 ? "VN" : corpus.MediaType == 1 ? "ANIME" : "BOOK", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }, 30));
             coverGrid.Children.Add(new Border { IsHitTestVisible = false, BorderBrush = new SolidColorBrush(Color.FromArgb(100, 255, 255, 255)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10) });
             var cover = new Button { Content = coverGrid, Padding = new Thickness(0), Margin = new Thickness(5, 8, 5, 12), ToolTip = "Inspect vocabulary and source", RenderTransformOrigin = new Point(.5, .5), RenderTransform = new ScaleTransform(1, 1), Effect = new DropShadowEffect { BlurRadius = 16, ShadowDepth = 5, Opacity = .5 } };
             cover.Tag = aspect;

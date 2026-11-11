@@ -8,6 +8,7 @@ public sealed record Deck(long Id, string Name, int Cards);
 public sealed record NoteType(long Id, string Name, List<string> Fields);
 public sealed record CollectionMetadata(int Schema, List<Deck> Decks, List<NoteType> NoteTypes);
 public sealed record DeckRule(string Name, bool Include);
+public sealed record AppearanceSettings(int Sidebar = 100, int Tabs = 100, int Content = 100, int Table = 100);
 public sealed class FieldMapping
 {
     public long NoteTypeId { get; set; }
