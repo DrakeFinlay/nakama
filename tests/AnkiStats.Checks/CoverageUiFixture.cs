@@ -20,6 +20,8 @@ internal static class CoverageUiFixture
         }
         source.Notes.Add(new(105, "はい", "", "yes", "Vocabulary", "Word"));
         source.Cards.Add(new(1105, 105, "日本語::永遠", 2, 2, 0));
+        source.Notes.Add(new(106, "犬", "いぬ", "dog", "Vocabulary", "Word"));
+        source.Cards.Add(new(1106, 106, "English", 2, 2, 0));
         if (mappings)
         {
             source.Notes.AddRange([new(201, "English-only fixture", "", "foreign deck", "Vocabulary", "Word"),
@@ -34,7 +36,7 @@ internal static class CoverageUiFixture
                 CREATE TABLE decks(id INTEGER PRIMARY KEY,name TEXT);
                 CREATE TABLE notetypes(id INTEGER PRIMARY KEY,name TEXT); INSERT INTO notetypes VALUES(1,'Vocabulary'),(2,'Kanji'),(9,'Grammar');
                 CREATE TABLE fields(ntid INTEGER,ord INTEGER,name TEXT,PRIMARY KEY(ntid,ord));
-                INSERT INTO fields VALUES(1,0,'Expression'),(1,1,'Reading'),(1,2,'Meaning'),(2,0,'Character'),(9,0,'Front'),(9,1,'Reading'),(9,2,'English');
+                INSERT INTO fields VALUES(1,0,'Expression'),(1,1,'Reading'),(1,2,'Meaning'),(1,3,'Sentence'),(2,0,'Character'),(9,0,'Front'),(9,1,'Reading'),(9,2,'English');
                 CREATE TABLE notes(id INTEGER PRIMARY KEY,mid INTEGER,flds TEXT);
                 CREATE TABLE cards(id INTEGER PRIMARY KEY,nid INTEGER,did INTEGER,odid INTEGER,queue INTEGER,type INTEGER,lapses INTEGER);
                 CREATE TABLE revlog(id INTEGER PRIMARY KEY,cid INTEGER,ease INTEGER,time INTEGER,type INTEGER);
@@ -50,7 +52,17 @@ internal static class CoverageUiFixture
             {
                 cmd.CommandText = "INSERT INTO notes VALUES($id,$type,$fields)"; cmd.Parameters.Clear();
                 cmd.Parameters.AddWithValue("$id", note.Id); cmd.Parameters.AddWithValue("$type", note.Category == "Kanji" ? 2 : note.Category == "Grammar" ? 9 : 1);
-                cmd.Parameters.AddWithValue("$fields", string.Join('\u001f', note.Expression, note.Reading, note.Meaning)); cmd.ExecuteNonQuery();
+                var sentence = note.Id switch
+                {
+                    100 => "<ruby>猫<rp>(</rp><rt>ねこ</rt><rp>)</rp></ruby>がいる。",
+                    101 => "私[わたし]は本を読む。 猫もいる！犬もいる。",
+                    102 => "The cat is out of the bag.",
+                    106 => "他のデッキの文。",
+                    _ => "&nbsp;"
+                };
+                var fields = string.Join('\u001f', note.Expression, note.Reading, note.Meaning);
+                if (note.Category == "Vocabulary") fields += '\u001f' + sentence;
+                cmd.Parameters.AddWithValue("$fields", fields); cmd.ExecuteNonQuery();
             }
             foreach (var card in source.Cards)
             {
@@ -74,6 +86,8 @@ internal static class CoverageUiFixture
         DeckProfiles.Ensure(settings, importer.Discover(profile));
         store.SaveCache(importer.Import(settings), settings);
         var reference = mappings ? MappingChecks.Reference() : CoverageChecks.Reference();
+        reference.Entries.Add(new("9900001", ["猫"], [new("ねこ", ["*"])], "cat", false, []));
+        reference.Entries.Add(new("9900002", ["犬"], [new("いぬ", ["*"])], "dog", true, ["N5"]));
         if (corrections) reference.Entries.Add(new("90006", ["影響力"], [new("えいきょうりょく", ["*"])], "influence", true, [], new("影響力", "えいきょうりょく")));
         reference.Entries.AddRange(CoverageMatchingChecks.Reference().Entries);
         reference.Entries.AddRange(DefinitionChecks.Reference().Entries);

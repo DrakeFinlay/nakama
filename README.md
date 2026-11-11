@@ -20,8 +20,9 @@ compares Common/JLPT mining opportunities against mapped vocabulary across Anki.
 Media → Import browses shared missing words from completed titles and can prepare
 previewed Anki notes, optionally including genuine local-script sentences.
 Each title's Word list also supports importing selected missing words from any shelf.
-Anki sentence-field analysis and unread-position tracking remain
-[future plans](.docs/FUTURE-PLANS.md).
+The [Sentences page](.docs/USER-GUIDE.md#explore-anki-sentences) shows card and
+character totals and a random sample, with optional local missing-word analysis.
+Unread-position tracking remains in the [future plans](.docs/FUTURE-PLANS.md).
 
 ## Documentation
 

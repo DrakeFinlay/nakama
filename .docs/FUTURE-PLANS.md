@@ -78,17 +78,18 @@ decks/note types. Preserve unique-entry counting, inspectable source provenance,
 live duplicate checks and interrupted-write recovery. Ordinary refresh and media
 acquisition must continue to avoid silently creating notes.
 
-## 2. Discover missing vocabulary in existing Anki sentences
+## 2. Extend missing-vocabulary discovery in Anki sentences
 
-Analyze sentences already stored in Anki to find words without dedicated
-vocabulary notes. Cross-reference candidates with JMdict common words and
-corrected OpenJLPT memberships, then bring eligible words into the new-note flow.
+The [Sentences page](USER-GUIDE.md#explore-anki-sentences) can scan existing
+`Sentence` fields in 日本語 and its subdecks on demand using local Sudachi.
+It compares resolved JMdict entries against that deck tree and separates
+Common/JLPT, other missing words, and uncertain matches. Bringing
+eligible words into the new-note flow remains planned.
 
 Proposed pipeline:
 
-1. Map sentence fields by note type and extend the importer/cache to retain them.
-   Current mappings retain intended vocabulary, reading, and meaning, not an
-   analyzable sentence corpus.
+1. Use the exact `Sentence` field on any note type. The importer and cache
+   already retain cleaned text from that field.
 2. Clean presentation markup/furigana without executing field content. Retain
    source note IDs and sentence contexts for inspection.
 3. Perform morphological analysis: segment Japanese text, recover dictionary
@@ -114,9 +115,10 @@ JMdict; the dictionary-form matcher alone is insufficient. Evaluate compatible
 local options when implementation starts. Having AI develop the feature does
 not by itself imply a cloud AI dependency or uploading private sentences.
 
-## 3. Sentence statistics
+## 3. Expand sentence statistics
 
-Add an overview of sentence material in the selected Anki scope:
+The Sentences overview shows card and character totals for 日本語 and its
+subdecks and samples a random Japanese sentence. Extend it with:
 
 - Notes with a nonempty sentence field, empty fields, extracted sentence count,
   and distinct normalized sentences. A field may contain several sentences;
@@ -205,14 +207,14 @@ new-note workflow and need their own explicit scope.
 
 ## 7. Suggested sequence and decisions to settle
 
-Start with sentence-field import and reusable local text analysis, then sentence
-statistics and missing-word inspection. Add candidate batch preparation using
-existing creation safeguards. Reuse that foundation in the existing Media
-library for unread-position tracking and broader source integrations. This is a
+Sentence-field import, basic statistics, and missing-word inspection are
+implemented. Add candidate batch preparation using existing creation safeguards.
+Reuse that foundation in the existing Media library for unread-position tracking
+and broader source integrations. This is a
 dependency-based proposal, and the release order is open.
 
-Before building, settle mining criteria, sentence fields/splitting, the first
-text source/format, analyzer and dictionary, ambiguity handling, reading-progress
-input, and source-sentence copying into new notes. Define unique-entry and token
+Before extending the pipeline, settle mining criteria, how to refine sentence
+splitting and dictionary matching, reading-progress input, and source-sentence
+copying into new notes. Define unique-entry and token
 denominators before publishing percentages. Private scripts, sentences, paths,
 artwork, and derived personal statistics stay outside the public repository.

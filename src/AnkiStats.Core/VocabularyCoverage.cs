@@ -104,12 +104,12 @@ public sealed class VocabularyMatcher
         .Any(form => WrittenKey(form) == WrittenKey(word));
     private static bool Applies(DictionaryEntry entry, DictionaryReading reading, string word) => entry.Spellings.Count == 0
         || Key(word) == Key(reading.Text) || reading.AppliesTo.Contains("*") || reading.AppliesTo.Any(s => Key(s) == Key(word));
-    public List<DictionaryEntry> Find(string word, string reading)
+    public List<DictionaryEntry> Find(string word, string reading, bool exactOnly = false)
     {
         if (!index.TryGetValue(Key(word), out var candidates)) return [];
         var compatible = candidates.Where(e => reading.Length == 0 || e.Readings.Any(r => Key(r.Text) == Key(reading) && Applies(e, r, word))).ToList();
         var exact = compatible.Where(e => ExactForm(e, word)).ToList();
-        return (exact.Count > 0 ? exact : compatible).OrderBy(e => e.Id, StringComparer.Ordinal).ToList();
+        return (exactOnly || exact.Count > 0 ? exact : compatible).OrderBy(e => e.Id, StringComparer.Ordinal).ToList();
     }
     private sealed record Resolution(List<DictionaryEntry> Candidates, bool Confirmed, bool Warning, string Reason, bool ReadingMatched = true, bool DefinitionWarning = false);
     private Resolution WithDefinition(Resolution resolution, string meaning)

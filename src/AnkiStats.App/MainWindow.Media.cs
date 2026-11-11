@@ -29,6 +29,7 @@ public partial class MainWindow
 
     private void InitializeMedia()
     {
+        MediaPython.Text = LocalMediaText.DefaultPython(AppContext.BaseDirectory);
         CurrentMediaCards.SizeChanged += (_, _) => CurrentMediaCards.Columns = CurrentMediaCards.Children.Count > 1 && CurrentMediaCards.ActualWidth >= 1500 ? 2 : 1;
         PlannedMediaCards.SizeChanged += (_, _) => ResizeMediaCards(PlannedMediaCards);
         CompletedMediaCards.SizeChanged += (_, _) => ResizeMediaCards(CompletedMediaCards);

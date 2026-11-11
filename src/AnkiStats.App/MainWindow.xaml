@@ -3,12 +3,22 @@
     <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
     <Border Background="#20232B" Padding="18,30,12,20">
       <DockPanel>
-        <StackPanel DockPanel.Dock="Top">
+        <StackPanel DockPanel.Dock="Bottom" VerticalAlignment="Bottom" Margin="0,6,0,0">
+          <TextBlock Text="LOCAL · YOU CONTROL ADDITIONS" Foreground="#8FB8EB" FontSize="10" Margin="10,0,0,10"/>
+          <TextBlock Text="Refresh with Anki open or closed. Keep Anki open to create new notes in Word Coverage." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="10,0,8,0"/>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel>
+          <StackPanel.Resources>
+            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+              <Setter Property="Padding" Value="16,8"/>
+            </Style>
+          </StackPanel.Resources>
           <Image Source="Assets/Nakama-wordmark.png" Width="140" Height="99" HorizontalAlignment="Left" Margin="10,0,0,8" AutomationProperties.Name="Nakama · 仲間 · なかま · companion"/>
-          <TextBlock Text="Your Japanese learning companion" Foreground="{StaticResource Muted}" FontSize="10" Margin="10,0,0,24"/>
+          <TextBlock Text="Your Japanese learning companion" Foreground="{StaticResource Muted}" FontSize="10" TextWrapping="Wrap" Margin="10,0,0,24"/>
           <Button Content="Overview" Tag="Overview" Click="Navigate" HorizontalContentAlignment="Left" Margin="0,0,0,8"/>
           <Button Content="Vocabulary" Tag="Vocabulary" Click="Navigate" Margin="0,0,0,8"/>
           <Button Content="Word Coverage" Tag="Word Coverage" Click="Navigate" Margin="0,0,0,8"/>
+          <Button Content="Sentences" Tag="Sentences" Click="Navigate" Margin="0,0,0,8"/>
           <Button Content="Media" Tag="Media" Click="Navigate" Margin="0,0,0,8"/>
           <Button Content="Mappings" Tag="Mappings" Click="Navigate" Margin="0,0,0,8"/>
           <Button Content="Reviews" Tag="Reviews" Click="Navigate" Margin="0,0,0,8"/>
@@ -17,11 +27,7 @@
           <Button Content="Time Analysis" Tag="Time Analysis" Click="Navigate" Margin="0,0,0,8"/>
           <Button Content="Learning Patterns" Tag="Learning Patterns" Click="Navigate" Margin="0,0,0,8"/>
           <Button Content="Settings" Tag="Settings" Click="Navigate" Margin="0,20,0,8"/>
-        </StackPanel>
-        <StackPanel VerticalAlignment="Bottom">
-          <TextBlock Text="LOCAL · YOU CONTROL ADDITIONS" Foreground="#8FB8EB" FontSize="10" Margin="10,0,0,10"/>
-          <TextBlock Text="Refresh with Anki open or closed. Keep Anki open to create new notes in Word Coverage." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="12" Margin="10,0,8,0"/>
-        </StackPanel>
+        </StackPanel></ScrollViewer>
       </DockPanel>
     </Border>
     <Grid Grid.Column="1" Margin="30,26,24,20">
@@ -36,6 +42,64 @@
       <Border x:Name="StatusPanel" Grid.Row="1" Background="#283446" CornerRadius="6" Padding="12" Margin="0,0,0,14"><TextBlock x:Name="StatusText" Text="Choose your profile in Settings. No Anki data is modified." TextWrapping="Wrap"/></Border>
       <ProgressBar x:Name="Progress" Grid.Row="2" Height="3" IsIndeterminate="True" Visibility="Collapsed" Margin="0,0,0,12"/>
       <Grid Grid.Row="3">
+        <Grid x:Name="SentencesPage" Visibility="Collapsed" Margin="0,0,12,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <StackPanel>
+            <TextBlock x:Name="SentenceScope" Text="Refresh a collection to load its Sentence fields." TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,0,0,12"/>
+            <Grid Margin="0,0,0,12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1.1*"/>
+                <ColumnDefinition Width="2.6*"/>
+              </Grid.ColumnDefinitions>
+              <Border Style="{StaticResource Card}" Padding="16" Margin="0,0,12,0"><StackPanel>
+                <TextBlock Text="Cards with sentences" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+                <TextBlock x:Name="SentenceCardCount" Text="—" FontSize="32" Margin="0,4,0,0"/>
+              </StackPanel></Border>
+              <Border Grid.Column="1" Style="{StaticResource Card}" Padding="16" Margin="0,0,12,0"><StackPanel>
+                <TextBlock Text="Total sentence characters" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+                <TextBlock x:Name="SentenceCharacterCount" Text="—" FontSize="32" Margin="0,4,0,0"/>
+              </StackPanel></Border>
+              <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16" Margin="0"><StackPanel>
+                <TextBlock Text="Random sentence" Foreground="{StaticResource Muted}"/>
+                <TextBlock x:Name="RandomSentenceText" Text="—" FontSize="23" TextWrapping="Wrap" Margin="0,6,0,0"
+                           MaxHeight="100" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+              </StackPanel></Border>
+            </Grid>
+          </StackPanel>
+          <StackPanel Grid.Row="1" Margin="0,0,0,12">
+            <WrapPanel>
+              <CheckBox x:Name="FindMissingSentenceWords" Content="Find missing words" Click="ToggleSentenceAnalysis" IsEnabled="False" VerticalAlignment="Center" Margin="0,0,16,0"/>
+              <TextBlock Text="Python" VerticalAlignment="Center" Margin="0,0,8,0"/>
+              <TextBox x:Name="SentencePython" Width="240" Text="{Binding Text, ElementName=MediaPython, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" AutomationProperties.Name="Python executable for sentence analysis"/>
+            </WrapPanel>
+            <TextBlock x:Name="SentenceAnalysisStatus" Text="Scans Japanese text and compares vocabulary in 日本語 and its subdecks when enabled." TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,8,0,0"/>
+          </StackPanel>
+          <DockPanel x:Name="SentenceResults" Grid.Row="2" Visibility="Collapsed">
+            <ComboBox x:Name="SentenceResultFilter" DockPanel.Dock="Top" HorizontalAlignment="Left" Margin="0,0,0,8"
+                      SelectedIndex="0" SelectionChanged="SentenceResultFilterChanged" AutomationProperties.Name="Sentence analysis results">
+              <ComboBoxItem Content="Missing Common / JLPT"/>
+              <ComboBoxItem Content="Other missing words"/>
+              <ComboBoxItem Content="Needs review"/>
+            </ComboBox>
+            <DataGrid x:Name="SentenceWordGrid" AutoGenerateColumns="False" IsReadOnly="True" EnableRowVirtualization="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Word" Binding="{Binding Word}" Width="95"/>
+                <DataGridTextColumn Header="Reading" Binding="{Binding Reading}" Width="100"/>
+                <DataGridTextColumn Header="Meaning" Binding="{Binding Meaning}" Width="2*"/>
+                <DataGridTextColumn Header="Lists" Binding="{Binding Lists}" Width="125"/>
+                <DataGridTextColumn Header="Uses" Binding="{Binding Occurrences}" Width="60"/>
+                <DataGridTextColumn Header="Example" Binding="{Binding Example}" Width="3*"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="145"/>
+              </DataGrid.Columns>
+            </DataGrid>
+          </DockPanel>
+        </Grid>
         <ScrollViewer x:Name="MappingsPage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,0,12,0">
           <TextBlock Text="Mapping dashboard" FontSize="24" FontWeight="SemiBold"/>
           <TextBlock x:Name="MappingsScope" Text="Connect a collection and install dictionary data to review mappings." TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,8,0,16"/>

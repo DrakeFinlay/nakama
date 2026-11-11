@@ -55,6 +55,7 @@ public sealed class ImportedCollection
     public CollectionMetadata Metadata { get; set; } = new(0, [], []);
     public List<NoteRecord> Notes { get; set; } = [];
     public List<CardRecord> Cards { get; set; } = [];
+    public List<SentenceCard>? JapaneseSentenceCards { get; set; }
     public List<ReviewRecord> Reviews { get; set; } = [];
     public int UnresolvedReviews { get; set; }
     public bool UnresolvedReviewsAvailable { get; set; } = true;

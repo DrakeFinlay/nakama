@@ -31,6 +31,8 @@ public partial class MainWindow
     {
         var views = prepared ?? await Task.Run(() => PrepareProfiles(source));
         importedData = source;
+        ResetSentenceAnalysis();
+        UpdateSentenceOverview();
         profileViews = views;
         ActiveProfilePicker.ItemsSource = views.Select(v => v.Profile).ToList();
         ActiveProfilePicker.SelectedItem = views.Find(v => v.Profile.Id == settings?.ActiveProfileId)?.Profile ?? views.FirstOrDefault()?.Profile;
