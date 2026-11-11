@@ -37,6 +37,17 @@ internal static class MediaChecks
         check(uncommonMining[0].Sentence == "努力に報う。" && uncommonMining[0].SentenceSource == "Local context",
             "a completed-media missing word can use a resolved source sentence from another local library script");
         check(MediaMining.Missing(library, missingCoverage, 1, false).Count == 2, "lower minimum reveals words limited to one completed title");
+        var scopedMining = MediaMining.Missing(library, missingCoverage, 1, true, new HashSet<string> { "a" });
+        check(scopedMining.Select(w => w.EntryId).SequenceEqual(["1000002", "1000006"])
+            && scopedMining.All(w => w.TitleCount == 1 && w.Titles == completedA.Title) && scopedMining[0].Occurrences == 5,
+            "selected completed titles constrain ranking, occurrences, and source titles");
+        var scopedUncommon = MediaMining.Missing(library, missingCoverage, 1, false, new HashSet<string> { "a", "context" });
+        check(scopedUncommon.Count == 1 && scopedUncommon[0].TitleCount == 1 && scopedUncommon[0].Occurrences == 1
+            && scopedUncommon[0].SentenceSource == plannedContext.Title,
+            "selected-title mining excludes other shelves from counts and can still use a local sentence from them");
+        check(MediaMining.Missing(library, missingCoverage, 2, true, new HashSet<string> { "a" }).Count == 0
+            && MediaMining.Missing(library, missingCoverage, 1, true, new HashSet<string> { "removed" }).Count == 0,
+            "minimum applies inside the title selection and unavailable titles never fall back to all completed titles");
         var chosenTitle = completedA with { State = MediaShelves.Reading, Words = [.. completedA.Words,
             new("2005410", "報う", "", 2, "Resolved", Sentence: "努力に報う。"), new(null, "未解決", "", 1, "Unmatched")] };
         var chosen = MediaMining.Selected(chosenTitle, missingCoverage, ["1000002", "2005410", "1000001", "1000004", "not-in-title", "", "1000002"]);

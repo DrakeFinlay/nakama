@@ -1,5 +1,5 @@
-using System.IO;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using AnkiStats.Core;
 
@@ -8,9 +8,94 @@ namespace AnkiStats.App;
 public partial class MainWindow
 {
     private List<MediaMiningWord> mediaMiningWords = [];
+    private HashSet<string>? mediaMiningTitleIds;
+
+    private void ChooseMediaMiningTitles(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Window { Owner = this, Title = "Choose completed titles", Width = 600, Height = 520,
+            MinWidth = 420, MinHeight = 360, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        var panel = new DockPanel { Margin = new Thickness(20) };
+        dialog.Content = panel;
+
+        var filters = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
+        DockPanel.SetDock(filters, Dock.Top);
+        panel.Children.Add(filters);
+        filters.Children.Add(new TextBlock { Text = "Search completed titles", Margin = new Thickness(0, 0, 0, 4) });
+        var search = new TextBox();
+        AutomationProperties.SetName(search, "Search completed titles");
+        filters.Children.Add(search);
+        var actions = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+        filters.Children.Add(actions);
+        var selectMatches = new Button { Content = "Select all matches" };
+        var clear = new Button { Content = "Clear selection" };
+        actions.Children.Add(selectMatches);
+        actions.Children.Add(clear);
+
+        var footer = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
+        DockPanel.SetDock(footer, Dock.Bottom);
+        panel.Children.Add(footer);
+        var summary = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
+        footer.Children.Add(summary);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        footer.Children.Add(buttons);
+        var apply = new Button { Content = "Apply", IsDefault = true };
+        buttons.Children.Add(apply);
+        buttons.Children.Add(new Button { Content = "Cancel", IsCancel = true });
+
+        var titles = new StackPanel();
+        panel.Children.Add(new ScrollViewer { Content = titles, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        var choices = mediaLibrary.Where(c => c.State == MediaShelves.Completed).OrderBy(c => c.Title, StringComparer.CurrentCultureIgnoreCase)
+            .Select(c => new CheckBox { Tag = c.Id, Content = c.Title, ToolTip = c.Edition,
+                IsChecked = mediaMiningTitleIds?.Contains(c.Id) == true }).ToArray();
+        foreach (var choice in choices)
+        {
+            titles.Children.Add(choice);
+            choice.Click += (_, _) => UpdateSummary();
+        }
+
+        void UpdateSummary()
+        {
+            var selected = choices.Count(choice => choice.IsChecked == true);
+            var matches = choices.Count(choice => choice.Visibility == Visibility.Visible);
+            summary.Text = $"{matches:N0} matching · " + (selected == 0 ? "All completed titles will be used." : $"{selected:N0} selected");
+            selectMatches.IsEnabled = matches > 0;
+            clear.IsEnabled = selected > 0;
+        }
+        search.TextChanged += (_, _) =>
+        {
+            var query = search.Text.Trim();
+            foreach (var choice in choices)
+                choice.Visibility = ((string)choice.Content).Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                    ? Visibility.Visible : Visibility.Collapsed;
+            UpdateSummary();
+        };
+        selectMatches.Click += (_, _) =>
+        {
+            foreach (var choice in choices.Where(choice => choice.Visibility == Visibility.Visible)) choice.IsChecked = true;
+            UpdateSummary();
+        };
+        clear.Click += (_, _) =>
+        {
+            foreach (var choice in choices) choice.IsChecked = false;
+            UpdateSummary();
+        };
+        apply.Click += (_, _) => dialog.DialogResult = true;
+        dialog.Loaded += (_, _) => search.Focus();
+        UpdateSummary();
+        if (dialog.ShowDialog() != true) return;
+
+        var selectedIds = choices.Where(choice => choice.IsChecked == true).Select(choice => (string)choice.Tag).ToHashSet(StringComparer.Ordinal);
+        mediaMiningTitleIds = selectedIds.Count == 0 ? null : selectedIds;
+        RefreshMediaMining();
+    }
+
     private void MediaMiningFilterChanged(object sender, RoutedEventArgs e) { if (ready) RefreshMediaMining(); }
     private void RefreshMediaMining()
     {
+        var completed = mediaLibrary.Where(c => c.State == MediaShelves.Completed).ToList();
+        var titleCount = mediaMiningTitleIds is null ? completed.Count : completed.Count(c => mediaMiningTitleIds.Contains(c.Id));
+        MediaMiningTitles.Content = mediaMiningTitleIds is null ? "Titles: All Completed…" : $"Titles: {titleCount:N0} selected…";
+        MediaMiningTitles.IsEnabled = completed.Count > 0 || mediaMiningTitleIds is not null;
         if (!HasMediaComparison)
         {
             mediaMiningWords = []; MediaMiningGrid.ItemsSource = null;
@@ -22,10 +107,20 @@ public partial class MainWindow
             mediaMiningWords = []; MediaMiningGrid.ItemsSource = null; MediaMiningStatus.Text = "Minimum titles must be a positive whole number."; return;
         }
         var search = MediaMiningSearch.Text.Trim();
-        mediaMiningWords = MediaMining.Missing(mediaLibrary.Select(MappedCorpus), mediaCoverage!, minimum, MediaMiningPool.SelectedIndex == 0)
+        var scope = mediaMiningTitleIds is null ? $"all {titleCount:N0} completed titles" : $"{titleCount:N0} selected completed titles";
+        if (minimum > titleCount)
+        {
+            mediaMiningWords = [];
+            MediaMiningGrid.ItemsSource = null;
+            MediaMiningStatus.Text = titleCount == 0
+                ? (completed.Count == 0 ? "No completed titles are available." : "Choose at least one completed title or clear the title selection.")
+                : $"Using {scope}. Lower Minimum titles from {minimum:N0} or include more completed titles.";
+            return;
+        }
+        mediaMiningWords = MediaMining.Missing(mediaLibrary.Select(MappedCorpus), mediaCoverage!, minimum, MediaMiningPool.SelectedIndex == 0, mediaMiningTitleIds)
             .Where(w => search.Length == 0 || $"{w.Word}\n{w.Reading}\n{w.Meaning}\n{w.Titles}".Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
         MediaMiningGrid.ItemsSource = mediaMiningWords;
-        MediaMiningStatus.Text = $"{mediaMiningWords.Count:N0} missing entries across {mediaLibrary.Count(c => c.State == MediaShelves.Completed):N0} completed titles · minimum {minimum} titles · "
+        MediaMiningStatus.Text = $"{mediaMiningWords.Count:N0} missing entries across {scope} · minimum {minimum} titles · "
             + $"{mediaMiningWords.Count(w => w.Sentence.Length > 0):N0} with source sentences. Ranked by title count, then occurrences. "
             + "Select rows, prepare the first N, or prepare all filtered rows. Preview never creates notes by itself.";
     }
