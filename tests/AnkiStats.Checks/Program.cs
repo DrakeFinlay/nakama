@@ -60,6 +60,13 @@ if (args is ["--local-media-smoke", var localReferenceRoot, var pythonPath])
     return;
 }
 if (args is ["--prepare-coverage-reference", var referenceSources, var referenceTarget]) { CoverageChecks.PrepareReference(referenceSources, referenceTarget); return; }
+if (args is ["--check-sentence-tokenizer", var sentenceReferenceRoot, var sentencePython])
+{
+    var reference = new CoverageReferenceStore(sentenceReferenceRoot).Load() ?? throw new InvalidOperationException("Install the reference first.");
+    await SentenceChecks.RunTokenizer(Check, reference, sentencePython);
+    Console.WriteLine($"All {checkCount} sentence tokenizer checks passed.");
+    return;
+}
 if (args is ["--audit-coverage", var coverageReferenceRoot, var appDatabase]) { CoverageChecks.Audit(coverageReferenceRoot, appDatabase); return; }
 if (args.Length >= 4 && args[0] == "--audit-coverage-report") { CoverageChecks.Audit(args[1], args[2], args[3], args.Skip(4)); return; }
 if (args is ["--seed-coverage-ui", var coverageRoot]) { CoverageUiFixture.Create(coverageRoot); Console.WriteLine("Synthetic coverage fixture ready."); return; }
@@ -144,6 +151,7 @@ try
     MappingChecks.Run(Check, sandbox);
     NoteCorrectionChecks.Run(Check, sandbox);
     MediaChecks.Run(Check, sandbox);
+    SentenceChecks.Run(Check, sandbox);
     ProfileChecks.Run(Check, sandbox);
     TimeChecks.Run(Check);
     LearningChecks.Run(Check);

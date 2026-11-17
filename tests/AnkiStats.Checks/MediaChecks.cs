@@ -122,8 +122,49 @@ internal static class MediaChecks
             Entry("OPS/a.xhtml", "<p>山</p>"); Entry("OPS/b.xhtml", "<p>食べる</p>");
         }
         check(LocalMediaText.Read(epub).Replace("\r", "") == "山\n食べる", "EPUB follows spine order rather than archive order");
+        VerifyAnalyzerProcess(check, sandbox).GetAwaiter().GetResult();
         VerifyApi(check, reference).GetAwaiter().GetResult();
     }
+
+    private static async Task VerifyAnalyzerProcess(Action<bool, string> check, string sandbox)
+    {
+        var checkout = Path.Combine(sandbox, "checkout");
+        var appDirectory = Path.Combine(checkout, "artifacts", "Nakama");
+        var appProject = Path.Combine(checkout, "src", "AnkiStats.App", "AnkiStats.App.csproj");
+        Directory.CreateDirectory(appDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(appProject)!);
+        File.WriteAllText(appProject, "");
+        check(LocalMediaText.DefaultPython(appDirectory) == "python", "Python defaults to PATH without a checkout environment");
+        var python = Path.Combine(checkout, ".tools", "media-python", "Scripts", "python.exe");
+        Directory.CreateDirectory(Path.GetDirectoryName(python)!);
+        File.WriteAllText(python, "");
+        check(LocalMediaText.DefaultPython(appDirectory) == python, "checkout app builds default to the prepared Sudachi environment");
+
+        try
+        {
+            await LocalMediaText.Analyze("山", Path.Combine(sandbox, "missing-python.exe"));
+            check(false, "an absent Python executable should fail");
+        }
+        catch (InvalidOperationException error)
+        {
+            check(error.Message.Contains("Could not start Python") && error.Message.Contains("SudachiPy"),
+                "a Python startup failure explains the local analyzer requirement");
+        }
+
+        if (!OperatingSystem.IsWindows()) return;
+        // where.exe exits without reading stdin. Large input guarantees a write past the pipe buffer.
+        try
+        {
+            await LocalMediaText.Analyze(new string('山', 256_000), Path.Combine(Environment.SystemDirectory, "where.exe"));
+            check(false, "an analyzer that exits before reading input should fail");
+        }
+        catch (InvalidDataException error)
+        {
+            check(error.InnerException is IOException && error.Message.Contains("exit code 1") && error.Message.Contains("SudachiDict-core"),
+                "an early analyzer exit reports the process failure instead of the broken pipe");
+        }
+    }
+
     private static async Task VerifyApi(Action<bool, string> check, CoverageReference reference)
     {
         using var http = new HttpClient(new ResponseHandler(request =>

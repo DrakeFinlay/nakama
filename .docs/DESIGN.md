@@ -23,6 +23,7 @@ create new notes for missing vocabulary.
 | Setup and import | Remembered Anki profile, editable deck selections and field mappings, safe snapshots with Anki open or closed, cached recovery after failure |
 | Deck profiles | Named selections, Japanese/Kanji/combined presets when available, shared mappings and time zone, synchronized active-profile selectors |
 | Vocabulary | Distinct expression/reading inventory, search, sorting, supporting note/card IDs, CSV export |
+| Sentences | Card and character totals and a random sample from Japanese text in `Sentence` fields under 日本語. An explicit local Sudachi/JMdict scan compares Japanese-script vocabulary against that deck tree and separates Common/JLPT from other missing words |
 | Word Coverage | JMdict common-word and corrected OpenJLPT N5–N1 coverage, cumulative unions, Markdown missing-word reports, match corrections, conservative stem families |
 | Note creation | Previewed batches from missing reference entries, Completed media pools, or selected words from a title on any shelf; fixed study deck, live duplicate checks, tag-free notes, interrupted-attempt recovery through AnkiConnect |
 | Reviews | Daily/weekly answer volume, Again rates and recorded response times by time bucket, card rankings |
@@ -36,7 +37,7 @@ reference coverage, matching and reports, and the explicitly requested new-note
 workflow. Calendar, deck profiles, time analysis, and learning patterns are also
 implemented. This does not imply that the broader roadmap is complete.
 
-There is no standalone dictionary browser, Anki sentence-field analysis,
+There is no standalone dictionary browser,
 game-archive extraction, grammar-pattern inventory, or general kanji-knowledge
 score in the current app. Media accepts extracted text and analyzed lists;
 optional local tokenization uses separately installed Sudachi. Existing comparisons involving kanji cards do not

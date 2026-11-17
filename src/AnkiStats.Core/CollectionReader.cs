@@ -49,6 +49,11 @@ public sealed class CollectionReader(string temporaryRoot, Func<AnkiConnectClien
         }),
         client => new LiveCollectionImporter(client).ImportMedia(settings));
 
+    public Task<ImportedCollection> ImportInventory(Settings settings) => Read(
+        () => new CollectionImporter(temporaryRoot).WithPrivateCopy(settings.ProfileFolder, db =>
+            CollectionImporter.ReadCollection(db, settings, includeReviews: false)),
+        client => new LiveCollectionImporter(client).ImportInventory(settings));
+
     private async Task<T> Read<T>(Func<T> fileRead, Func<AnkiConnectClient, Task<T>> liveRead)
     {
         try { return await Task.Run(fileRead); }

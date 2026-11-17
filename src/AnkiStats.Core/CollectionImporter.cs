@@ -99,7 +99,8 @@ public sealed class CollectionImporter(string temporaryRoot)
     {
         progress?.Report("Reading deck and field definitions…");
         metadata ??= ReadMetadata(db);
-        var deckNames = metadata.Decks.Where(d => settings.Includes(d.Name)).ToDictionary(d => d.Id, d => d.Name);
+        var deckNames = metadata.Decks.Where(d => settings.Includes(d.Name) || SentenceAnalysis.IncludesDeck(d.Name))
+            .ToDictionary(d => d.Id, d => d.Name);
         var cards = new List<CardRecord>();
         using var cmd = db.CreateCommand();
         cmd.CommandText = "SELECT id,nid,did,odid,queue,type,lapses FROM cards";
@@ -140,6 +141,8 @@ public sealed class CollectionImporter(string temporaryRoot)
     {
         var mappings = settings.Mappings.ToDictionary(m => m.NoteTypeId);
         var types = metadata.NoteTypes.ToDictionary(t => t.Id);
+        var sentenceFields = metadata.NoteTypes.Select(t => (t.Id, Index: t.Fields.IndexOf("Sentence")))
+            .Where(t => t.Index >= 0).ToDictionary(t => t.Id, t => t.Index);
         foreach (var m in settings.Mappings.Where(m => m.Category != "Ignored"))
         {
             if (!types.TryGetValue(m.NoteTypeId, out var type)) throw new InvalidDataException("A mapped note type no longer exists. Inspect the profile again in Settings.");
@@ -153,18 +156,37 @@ public sealed class CollectionImporter(string temporaryRoot)
             Scope = settings.Profiles.Count > 0 ? "Saved deck profiles: " + string.Join(", ", settings.Profiles.Select(p => p.Name))
                 : string.Join(", ", settings.DeckRules.Select(r => (r.Include ? "+ " : "− ") + r.Name)), SourceProfileFolder = settings.ProfileFolder,
             IsSynthetic = File.Exists(Path.Combine(settings.ProfileFolder, ".ankistats-test-data")), RefreshedAt = DateTimeOffset.UtcNow };
-        var candidateCards = cards.ToList();
-        var selectedNotes = candidateCards.Select(c => c.NoteId).ToHashSet();
+        var cardList = cards.ToList();
+        var selectedDecks = metadata.Decks.Where(d => settings.Includes(d.Name)).Select(d => d.Name).ToHashSet();
+        var selectedCards = cardList.Where(c => selectedDecks.Contains(c.Deck)).ToList();
+        var selectedNotes = selectedCards.Select(c => c.NoteId).ToHashSet();
+        var sentenceCards = cardList.Where(c => SentenceAnalysis.IncludesDeck(c.Deck)).ToList();
+        var sentenceNotes = sentenceCards.Select(c => c.NoteId).ToHashSet();
+        var sentences = new Dictionary<long, (string Text, int Characters)>();
         progress?.Report("Extracting selected vocabulary…");
         foreach (var note in notes)
         {
-            if (!selectedNotes.Contains(note.Id) || !mappings.TryGetValue(note.TypeId, out var m) || m.Category == "Ignored") continue;
+            var hasMapping = mappings.TryGetValue(note.TypeId, out var m) && m.Category != "Ignored" && selectedNotes.Contains(note.Id);
+            var hasSentence = sentenceFields.TryGetValue(note.TypeId, out var sentenceIndex) && sentenceNotes.Contains(note.Id);
+            if (!hasMapping && !hasSentence) continue;
             var fields = note.Fields.Split('\u001f');
-            string Field(int index, bool expression = false) => index < 0 || index >= fields.Length ? "" : TextNormalizer.Clean(fields[index], expression && m.StripBracketReadings);
-            data.Notes.Add(new(note.Id, Field(m.Expression, true), Field(m.Reading), Field(m.Meaning), m.Category, types[note.TypeId].Name, Field(m.Expression)));
+            string Field(int index, bool stripReadings = false) => index < 0 || index >= fields.Length ? "" : TextNormalizer.Clean(fields[index], stripReadings);
+            if (hasSentence && sentenceIndex < fields.Length)
+            {
+                var text = TextNormalizer.Clean(fields[sentenceIndex], stripBracketReadings: true);
+                if (SentenceAnalysis.ContainsJapanese(text))
+                    sentences.Add(note.Id, (text, SentenceAnalysis.CountCharacters(text)));
+            }
+            if (hasMapping)
+                data.Notes.Add(new(note.Id, Field(m!.Expression, m.StripBracketReadings), Field(m.Reading), Field(m.Meaning), m.Category, types[note.TypeId].Name, Field(m.Expression)));
         }
+        data.JapaneseSentenceCards = sentenceCards.Where(c => sentences.ContainsKey(c.NoteId)).Select(c =>
+        {
+            var (text, characters) = sentences[c.NoteId];
+            return new SentenceCard(c.Id, c.NoteId, c.Deck, text, characters);
+        }).ToList();
         var noteIds = data.Notes.Select(n => n.Id).ToHashSet();
-        data.Cards = candidateCards.Where(c => noteIds.Contains(c.NoteId)).ToList();
+        data.Cards = selectedCards.Where(c => noteIds.Contains(c.NoteId)).ToList();
         return data;
     }
 }

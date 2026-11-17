@@ -8,7 +8,7 @@ using AnkiStats.Core;
 internal static class FastRefreshChecks
 {
     private sealed record Card(long Id, long Deck, long Modified = 1, int Queue = 2);
-    private sealed record Note(string Text, long Modified = 1);
+    private sealed record Note(string Text, long Modified = 1, string Sentence = "");
 
     private sealed class Anki : HttpMessageHandler
     {
@@ -36,9 +36,9 @@ internal static class FastRefreshChecks
             {
                 "version" => 6,
                 "getActiveProfile" => "RefreshFixture",
-                "deckNamesAndIds" => new Dictionary<string, long> { ["Study"] = 1, ["Other"] = 2 },
+                "deckNamesAndIds" => new Dictionary<string, long> { ["日本語::Study"] = 1, ["Other"] = 2, ["日本語::Later"] = 3 },
                 "modelNamesAndIds" => new Dictionary<string, long> { ["Japanese"] = 7 },
-                "modelFieldNames" => new[] { "Front", "English" },
+                "modelFieldNames" => new[] { "Front", "English", "Sentence" },
                 "findCards" => Find(parameters.GetProperty("query").GetString()!),
                 "cardsModTime" => CardMods(Ids("cards")),
                 "notesModTime" => Ids("notes").Select(i => new { noteId = i, mod = Notes[i].Modified }).ToArray(),
@@ -78,7 +78,7 @@ internal static class FastRefreshChecks
         {
             NoteDetails.AddRange(ids);
             return ids.Select(i => new { noteId = i, modelName = "Japanese", fields = new Dictionary<string, object>
-                { ["Front"] = new { value = Notes[i].Text }, ["English"] = new { value = "meaning" } } }).ToArray();
+                { ["Front"] = new { value = Notes[i].Text }, ["English"] = new { value = "meaning" }, ["Sentence"] = new { value = Notes[i].Sentence } } }).ToArray();
         }
 
         private object History(long[] ids)
@@ -94,7 +94,7 @@ internal static class FastRefreshChecks
     private static async Task RunAsync(Action<bool, string> check, string sandbox)
     {
         const int size = 16_000, changed = 2_000;
-        var settings = new Settings { ProfileFolder = Path.Combine(sandbox, "RefreshFixture"), DeckRules = [new("Study", true)],
+        var settings = new Settings { ProfileFolder = Path.Combine(sandbox, "RefreshFixture"), DeckRules = [new("日本語::Study", true)],
             Mappings = [new() { NoteTypeId = 7, Category = "Vocabulary", Expression = 0, Meaning = 1 }] };
         using var anki = new Anki();
         using var client = new AnkiConnectClient(handler: anki);
@@ -107,6 +107,8 @@ internal static class FastRefreshChecks
             anki.Reviews[id] = Enumerable.Range(0, 8).Select(offset => new ReviewRecord(old + id * 8 + offset, id, 3, 1000, 1)).ToList();
         }
         anki.Cards[size] = anki.Cards[size] with { Queue = -2 };
+        anki.Notes[1] = anki.Notes[1] with { Sentence = "猫がいる。" };
+        anki.Notes[size + 1] = anki.Notes[size + 1] with { Sentence = "本がある。" };
 
         var timer = Stopwatch.StartNew();
         var seeded = await importer.Refresh(settings, includeMedia: true);
@@ -120,6 +122,8 @@ internal static class FastRefreshChecks
         var store = new LocalStore(Path.Combine(sandbox, "fast-refresh"));
         store.SaveCache(seeded.Stats, settings);
         var saved = store.LoadCache(settings.CollectionKey)!;
+        check(saved.JapaneseSentenceCards is [{ Text: "猫がいる。", Characters: 5 }] && seeded.Media?.JapaneseSentenceCards?.Count == 1,
+            "live sentence fields exclude other decks and survive the cache");
         check(saved.LiveIndex is { Cards.Count: size + 1, Notes.Count: size + 1 }, "live change index survives reopening the persisted cache");
         anki.ResetCounters(); timer.Restart();
         var unchanged = await importer.Refresh(settings, saved, includeMedia: true);
@@ -135,7 +139,7 @@ internal static class FastRefreshChecks
             anki.Cards[id] = anki.Cards[id] with { Modified = now / 1000 };
             anki.Reviews[id].Add(new(now + id, id, 3, 1500, 1));
         }
-        anki.Notes[1] = new("編集", now / 1000);
+        anki.Notes[1] = new("編集", now / 1000, "犬がいる。");
         anki.ResetCounters(); timer.Restart();
         var delta = await importer.Refresh(settings, unchanged.Stats, includeMedia: true);
         var deltaTime = timer.Elapsed;
@@ -145,7 +149,7 @@ internal static class FastRefreshChecks
         check(deltaBytes < fullBytes / 2 && unchangedBytes < deltaBytes,
             "16,000-card benchmark cuts simulated response payload substantially");
         var rebuilt = await importer.Refresh(settings, includeMedia: true);
-        check(Equivalent(delta.Stats, rebuilt.Stats) && Equivalent(delta.Media!, rebuilt.Media!),
+        check(delta.Stats.JapaneseSentenceCards is [{ Text: "犬がいる。" }] && Equivalent(delta.Stats, rebuilt.Stats) && Equivalent(delta.Media!, rebuilt.Media!),
             "2,000-card fast refresh matches a full rebuild in stats and media");
 
         var reviewWithoutStamp = new ReviewRecord(now + size, size - 3, 3, 1000, 1);
@@ -176,6 +180,15 @@ internal static class FastRefreshChecks
         var mediaOnly = await importer.ImportMedia(settings);
         check(anki.HistoryReads.Count == 0 && mediaOnly.Cards.Count == size + 1, "manual media comparison requests vocabulary without review history");
 
+        anki.Cards[size + 3] = new(size + 3, 3);
+        anki.Notes[size + 3] = new("別の語", Sentence: "別の日本語の文。");
+        anki.ResetCounters();
+        var scoped = await importer.ImportInventory(SentenceAnalysis.CollectionSettings(settings));
+        check(scoped.Cards.All(c => SentenceAnalysis.IncludesDeck(c.Deck)) && scoped.Cards.Any(c => c.Id == size + 3)
+            && scoped.JapaneseSentenceCards!.Any(c => c.CardId == size + 3)
+            && anki.HistoryReads.Count == 0 && !anki.CardDetails.Contains(size - 1),
+            "manual sentence inventory reads all Japanese subdecks, skipping card details and history outside its scope");
+
         anki.ResetCounters(); anki.ChangeDuringVerification = true;
         var rejected = false;
         try { await importer.Refresh(settings, saved); }
@@ -190,5 +203,6 @@ internal static class FastRefreshChecks
     private static bool Equivalent(ImportedCollection left, ImportedCollection right) =>
         left.Cards.OrderBy(c => c.Id).SequenceEqual(right.Cards.OrderBy(c => c.Id))
         && left.Notes.OrderBy(n => n.Id).SequenceEqual(right.Notes.OrderBy(n => n.Id))
+        && left.JapaneseSentenceCards!.OrderBy(c => c.CardId).SequenceEqual(right.JapaneseSentenceCards!.OrderBy(c => c.CardId))
         && left.Reviews.SequenceEqual(right.Reviews);
 }

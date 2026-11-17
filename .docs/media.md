@@ -138,11 +138,12 @@ Use a Python installation/environment with these optional dependencies:
 python -m pip install SudachiPy SudachiDict-core
 ```
 
-Enter that environment's full Python executable path in Media if `python` is
-not on PATH. The development validation environment, when prepared, is
-`.tools/media-python/Scripts/python.exe`. Python and Sudachi are not bundled in
-the Windows app. No installation happens automatically. Missing dependencies
-produce an error, retaining previously imported titles.
+Media and Sentences share a Python executable setting. Builds run from a
+checkout pick `.tools/media-python/Scripts/python.exe` when present. Other
+builds default to `python`. If needed, enter the full path to a Python executable
+with both dependencies installed. Python and Sudachi are separate installs.
+The sentence scan uses the dictionary lookup and base-reading APIs in SudachiPy 0.7.
+Analyzer errors leave previously imported media titles available.
 
 The embedded helper runs with isolated Python imports (`-I`), receives cleaned
 text on stdin, and returns aggregated surface/lemma/reading/POS records. It uses

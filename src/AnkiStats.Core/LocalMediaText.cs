@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
@@ -8,12 +9,27 @@ using System.Xml.Linq;
 
 namespace AnkiStats.Core;
 
-public sealed record MediaToken(string Surface, string Lemma, string Normalized, string Reading, string Pos, int Count, string Sentence = "");
+public sealed record MediaToken(string Surface, string Lemma, string Normalized, string Reading, string Pos, int Count, string Sentence = "",
+    string LemmaReading = "", string ReviewReason = "", bool IsCompound = false);
 public sealed record MorphologyOutput(string Analyzer, List<MediaToken> Tokens);
 
 public static class LocalMediaText
 {
     private const int MaxCharacters = 20_000_000;
+    private const string PythonSetup = "Choose a Python executable with SudachiPy and SudachiDict-core installed.";
+
+    public static string DefaultPython(string applicationDirectory)
+    {
+        for (var directory = new DirectoryInfo(applicationDirectory); directory is not null; directory = directory.Parent)
+        {
+            if (!File.Exists(Path.Combine(directory.FullName, "src", "AnkiStats.App", "AnkiStats.App.csproj"))) continue;
+            var python = Path.Combine(directory.FullName, ".tools", "media-python", "Scripts", "python.exe");
+            if (File.Exists(python)) return python;
+            break;
+        }
+        return "python";
+    }
+
     public static string Read(string path)
     {
         if (new FileInfo(path).Length > 100_000_000) throw new InvalidDataException("Choose a media file smaller than 100 MB.");
@@ -80,7 +96,7 @@ public static class LocalMediaText
         return Clean(text.ToString());
     }
 
-    public static async Task<MorphologyOutput> Analyze(string text, string python, CancellationToken token = default)
+    public static async Task<MorphologyOutput> Analyze(string text, string python, CancellationToken token = default, bool japaneseOnly = false)
     {
         using var resource = typeof(LocalMediaText).Assembly.GetManifestResourceStream("AnkiStats.Core.media_tokenize.py")!;
         using var reader = new StreamReader(resource);
@@ -89,15 +105,41 @@ public static class LocalMediaText
             RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
             StandardInputEncoding = new UTF8Encoding(false), StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
         start.ArgumentList.Add("-I"); start.ArgumentList.Add("-X"); start.ArgumentList.Add("utf8"); start.ArgumentList.Add("-c"); start.ArgumentList.Add(script);
-        using var process = Process.Start(start) ?? throw new IOException("Could not start Python. Configure a Python executable with SudachiPy and SudachiDict-core installed.");
+        if (japaneseOnly) start.ArgumentList.Add("--japanese-only");
+        using var process = new Process { StartInfo = start };
+        try
+        {
+            if (!process.Start()) throw new InvalidOperationException($"Could not start Python at \"{python}\". {PythonSetup}");
+        }
+        catch (Win32Exception error)
+        {
+            throw new InvalidOperationException($"Could not start Python at \"{python}\". {PythonSetup}", error);
+        }
         using var cancellation = token.Register(() => { try { process.Kill(true); } catch (InvalidOperationException) { } });
         var output = process.StandardOutput.ReadToEndAsync(token);
         var errors = process.StandardError.ReadToEndAsync(token);
-        await process.StandardInput.WriteAsync(text.AsMemory(), token); process.StandardInput.Close();
+        IOException? inputError = null;
+        try
+        {
+            using var input = process.StandardInput;
+            await input.WriteAsync(text.AsMemory(), token);
+            await input.FlushAsync(token);
+        }
+        catch (IOException error)
+        {
+            // Python may exit before reading stdin. Wait for its diagnostic instead of reporting a broken pipe.
+            inputError = error;
+        }
         await process.WaitForExitAsync(token);
-        var error = await errors;
-        if (process.ExitCode != 0) throw new InvalidDataException("Local morphology failed. Install SudachiPy and SudachiDict-core into the selected Python environment. " + error);
-        return JsonSerializer.Deserialize<MorphologyOutput>(await output, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+        var diagnostic = (await errors).Trim().Split('\n').Last().Trim();
+        var json = await output;
+        token.ThrowIfCancellationRequested();
+        if (process.ExitCode != 0 || inputError is not null || string.IsNullOrWhiteSpace(json))
+        {
+            var details = diagnostic.Length == 0 ? "" : $" {diagnostic}";
+            throw new InvalidDataException($"Python at \"{python}\" could not run Sudachi (exit code {process.ExitCode}).{details} {PythonSetup}", inputError);
+        }
+        return JsonSerializer.Deserialize<MorphologyOutput>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             ?? throw new InvalidDataException("The local analyzer returned no output.");
     }
 
