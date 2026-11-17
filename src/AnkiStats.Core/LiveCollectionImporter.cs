@@ -62,17 +62,20 @@ public sealed class LiveCollectionImporter(AnkiConnectClient client)
         (await Refresh(settings, progress: progress)).Stats;
 
     public async Task<ImportedCollection> ImportMedia(Settings settings) =>
-        (await Read(settings, null, false, mediaOnly: true, progress: null))!.Stats;
+        (await Read(settings, null, false, includeReviews: false, progress: null, allDecks: true))!.Stats;
+
+    public async Task<ImportedCollection> ImportInventory(Settings settings) =>
+        (await Read(settings, null, false, includeReviews: false, progress: null))!.Stats;
 
     public async Task<CollectionRefresh> Refresh(Settings settings, ImportedCollection? previous = null,
         bool includeMedia = false, IProgress<string>? progress = null) =>
-        (await Read(settings, previous, includeMedia, mediaOnly: false, progress))!;
+        (await Read(settings, previous, includeMedia, includeReviews: true, progress))!;
 
     internal Task<CollectionRefresh?> TryFastRefresh(Settings settings, ImportedCollection previous,
-        bool includeMedia, IProgress<string>? progress) => Read(settings, previous, includeMedia, mediaOnly: false, progress, fastOnly: true);
+        bool includeMedia, IProgress<string>? progress) => Read(settings, previous, includeMedia, includeReviews: true, progress, fastOnly: true);
 
     private async Task<CollectionRefresh?> Read(Settings settings, ImportedCollection? previous, bool includeMedia,
-        bool mediaOnly, IProgress<string>? progress, bool fastOnly = false)
+        bool includeReviews, IProgress<string>? progress, bool fastOnly = false, bool allDecks = false)
     {
         var started = DateTimeOffset.UtcNow;
         var index = previous?.LiveIndex;
@@ -84,7 +87,7 @@ public sealed class LiveCollectionImporter(AnkiConnectClient client)
 
         progress?.Report("Checking live deck membership and field definitions…");
         var inventory = await InventoryFor(settings.ProfileFolder);
-        if (mediaOnly) settings = MediaAnalysis.CollectionSettings(settings, inventory.Metadata);
+        if (allDecks) settings = MediaAnalysis.CollectionSettings(settings, inventory.Metadata);
         if (index is not null && !SameNoteTypes(previous!.Metadata, inventory.Metadata))
         {
             if (fastOnly) return null;
@@ -92,7 +95,7 @@ public sealed class LiveCollectionImporter(AnkiConnectClient client)
         }
 
         var selectedDecks = inventory.Metadata.Decks.Where(d => settings.Includes(d.Name)).Select(d => d.Name).ToHashSet();
-        var expectedDecks = inventory.HomeDecks.Where(c => includeMedia || selectedDecks.Contains(c.Value)).ToDictionary();
+        var expectedDecks = inventory.HomeDecks.Where(c => includeMedia || selectedDecks.Contains(c.Value) || SentenceAnalysis.IncludesDeck(c.Value)).ToDictionary();
         Dictionary<long, long>? initialCardMods = null;
         var cards = new Dictionary<long, LiveCard>();
         var changedCards = expectedDecks.Keys.ToArray();
@@ -129,7 +132,7 @@ public sealed class LiveCollectionImporter(AnkiConnectClient client)
         var reviewIds = new HashSet<long>();
         var recent = new HashSet<long>();
         var recentQuery = "";
-        if (!mediaOnly)
+        if (includeReviews)
         {
             if (index is null) reviewIds = statsIds;
             else
@@ -170,7 +173,7 @@ public sealed class LiveCollectionImporter(AnkiConnectClient client)
             stats.UnknownReviewKinds = stats.Reviews.Count(r => r.Kind is < 0 or > 5);
             stats.RefreshedAt = DateTimeOffset.UtcNow;
             stats.IsIncremental = index is not null;
-            if (!mediaOnly) stats.LiveIndex = new(IndexVersion, started, cards, notes);
+            if (includeReviews) stats.LiveIndex = new(IndexVersion, started, cards, notes);
 
             var media = includeMedia ? Project(MediaAnalysis.CollectionSettings(settings, inventory.Metadata),
                 inventory.Metadata, cards, notes) : null;
@@ -297,8 +300,7 @@ public sealed class LiveCollectionImporter(AnkiConnectClient client)
     private static ImportedCollection Project(Settings settings, CollectionMetadata metadata, Dictionary<long, LiveCard> cards,
         Dictionary<long, LiveNote> notes, IProgress<string>? progress = null)
     {
-        var selectedDecks = metadata.Decks.Where(d => settings.Includes(d.Name)).Select(d => d.Name).ToHashSet();
-        var result = CollectionImporter.Project(settings, metadata, cards.Values.Select(c => c.Card).Where(c => selectedDecks.Contains(c.Deck)),
+        var result = CollectionImporter.Project(settings, metadata, cards.Values.Select(c => c.Card),
             notes.Values.Select(n => n.Note), progress);
         // AnkiConnect cannot enumerate review rows whose cards have been deleted.
         result.UnresolvedReviewsAvailable = false;

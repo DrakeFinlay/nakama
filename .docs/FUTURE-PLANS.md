@@ -1,6 +1,6 @@
 # Nakama — Future Plans
 
-This roadmap records completed milestones and open work after Phase 1A/1B.
+This roadmap records completed milestones, planned work, and open decisions.
 [Current design](DESIGN.md) describes implemented behavior, and the
 [README](../README.md) explains setup and use.
 
@@ -16,6 +16,16 @@ This roadmap records completed milestones and open work after Phase 1A/1B.
   complete available history for the saved deck scopes. Media shares the refresh's
   all-deck vocabulary snapshot without a second review-history import. See
   [refresh modes](anki-connect.md#refresh-modes).
+- **Sentence analysis.** The cached Japanese deck tree supplies card and
+  character totals and a random sample. An on-demand local Sudachi scan finds
+  missing Common/JLPT and other entries and flags uncertain matches.
+  [Sentences guide](USER-GUIDE.md#explore-anki-sentences)
+- **Media mining.** Import can aggregate all Completed titles or a selected
+  subset. The Word list supports single-title batches on any shelf.
+  [Media guide](media.md#browse-and-import-missing-words-from-completed)
+- **Desktop and reporting.** The coverage table copies as HTML and tab-separated
+  text. Settings saves independent font sizes for sidebar, inner tabs, page
+  content, and tables. [User's guide](USER-GUIDE.md#customize-font-sizes)
 
 ## Refresh performance follow-ups
 
@@ -24,7 +34,7 @@ that changes about 2,000 of 16,000 cards. Separate API enumeration, history
 transfer, cache persistence, profile analysis, and media matching when profiling.
 In the [synthetic 16,000-card check](../tests/AnkiStats.Checks/FastRefreshChecks.cs),
 Fast Refresh with 2,000 changed cards matched Full Refresh while receiving
-3.80 MB of simulated AnkiConnect responses versus 17.55 MB for Full Refresh.
+3.80 MB of simulated AnkiConnect responses versus 17.94 MB for Full Refresh.
 An unchanged pass received 1.73 MB. End-to-end timing on a live collection
 remains open.
 
@@ -60,63 +70,41 @@ position mapping. Without that information, report whole-title coverage rather
 than assuming what remains unread. Manual versus integrated progress tracking
 remains an open decision for unread-portion analysis.
 
-### Media Import: implemented scope and follow-ups
+### Media Import follow-ups
 
-The Import tab now aggregates missing resolved entries from Completed corpora,
-with Common/JLPT and outside-both pools. Rank by number of completed titles, then
-total occurrences, with an adjustable minimum title count. Prepare selected
-rows, the first N, or all filtered rows through the existing Anki preview/writer.
-Genuine locally analyzed source sentences are optional; missing ones stay blank
-and are disclosed in preview. See [Media](media.md) for current behavior.
-An individual title's Word list also supports selected missing entries from any
-shelf, including both Common/JLPT and other words, without a title-count minimum.
+Extend multi-title aggregation to Currently reading and Planned works. Add
+alternative ordering controls and let the user review multiple source sentence
+occurrences. Evaluate additional permitted script sources and configurable
+destination decks and note types. Preserve unique-entry counting, inspectable
+source provenance, live duplicate checks, and interrupted-write recovery.
+Note creation continues to require an explicit Create action after preview.
 
-Future additions include aggregating a chosen subset of source titles (including
-current or planned works), alternative ordering controls, reviewing multiple sentence
-occurrences, acquiring additional permitted scripts, and configurable target
-decks/note types. Preserve unique-entry counting, inspectable source provenance,
-live duplicate checks and interrupted-write recovery. Ordinary refresh and media
-acquisition must continue to avoid silently creating notes.
+## 2. Extend missing-vocabulary discovery in Anki sentences
 
-## 2. Discover missing vocabulary in existing Anki sentences
+The [Sentences page](USER-GUIDE.md#explore-anki-sentences) can scan existing
+`Sentence` fields in 日本語 and its subdecks on demand using local Sudachi.
+It compares resolved JMdict entries against that deck tree and separates
+Common/JLPT, other missing words, and uncertain matches. Bringing
+eligible words into the new-note flow remains planned.
 
-Analyze sentences already stored in Anki to find words without dedicated
-vocabulary notes. Cross-reference candidates with JMdict common words and
-corrected OpenJLPT memberships, then bring eligible words into the new-note flow.
+Build on the existing local Sudachi/JMdict pipeline. Improve inspection of
+supporting notes and individual sentence occurrences, retaining source positions
+and parts of speech where needed. Extend the comparison to
+show Known, Familiar, and database-only coverage alongside missing and uncertain
+entries, with one row per resolved dictionary ID. Incidental sentence vocabulary
+continues to contribute no credit to Word Coverage.
 
-Proposed pipeline:
+Let users prepare eligible batches from sentence results and reuse the
+preferred forms, live duplicate checks, preview, explicit Create action, and
+interrupted-write recovery. Candidate ordering, whether to include supporting
+text in new notes, and how to choose among occurrences remain open. Explore
+automatic candidate discovery and batch preparation after the on-demand flow
+is in place. Keep analysis and supporting text local.
 
-1. Map sentence fields by note type and extend the importer/cache to retain them.
-   Current mappings retain intended vocabulary, reading, and meaning, not an
-   analyzable sentence corpus.
-2. Clean presentation markup/furigana without executing field content. Retain
-   source note IDs and sentence contexts for inspection.
-3. Perform morphological analysis: segment Japanese text, recover dictionary
-   forms, and retain surface forms, readings, parts of speech, and positions.
-4. Resolve results to dictionary identities, treating compounds, names,
-   inflections, and ambiguous kana conservatively.
-5. Compare with dedicated vocabulary notes, separating Known, Familiar,
-   database-only, missing, and uncertain candidates. Deduplicate by dictionary ID.
-6. Attach Common/N5–N1 memberships and show supporting sentence occurrences.
-7. Automatically prepare eligible new-word batches. Reuse preview, explicit
-   Create, preferred forms, live duplicate checks, and interrupted-write recovery.
-   A normal stats refresh should not silently add notes.
+## 3. Expand sentence statistics
 
-Automatic discovery and batch preparation are the intended direction. Whether
-to copy a supporting sentence into the generated note, which occurrence to pick,
-and how to order candidates remain open. Current reference-list creation leaves
-Sentence blank; sentence-driven creation would extend that behavior.
-
-Incidental sentence vocabulary must not count as having a dedicated card or
-knowing a word. Keep sentence results separate from current Word Coverage.
-This needs a morphological analyzer and its analysis dictionary in addition to
-JMdict; the dictionary-form matcher alone is insufficient. Evaluate compatible
-local options when implementation starts. Having AI develop the feature does
-not by itself imply a cloud AI dependency or uploading private sentences.
-
-## 3. Sentence statistics
-
-Add an overview of sentence material in the selected Anki scope:
+The Sentences overview shows card and character totals for 日本語 and its
+subdecks and samples a random Japanese sentence. Extend it with:
 
 - Notes with a nonempty sentence field, empty fields, extracted sentence count,
   and distinct normalized sentences. A field may contain several sentences;
@@ -158,8 +146,8 @@ Identifying a work should not depend on its icon being available.
 
 The first supported integration is Jiten vocabulary acquisition, with local
 text/Sudachi analysis as a fallback. Initial media types are VNs, anime and books.
-See [Media](media.md) for implemented behavior and limitations; broader sources,
-media types and source-sentence integration below remain future proposals.
+See [Media](media.md) for current source support and optional local-script
+sentences. Broader sources, formats, and media types are still open.
 
 Let the user select future games, anime, novels, manga, or other works. Obtain
 available scripts/subtitles/text through supported integrations, perform
@@ -168,17 +156,16 @@ the app whenever analysis runs with refreshed Anki data.
 
 Integrated acquisition and analysis is the preferred experience. Evaluate
 additional providers, script sources, formats, and permitted use when each
-integration begins.
+integration begins, including extraction from supported game archives.
 
-Cache versioned text-analysis results locally to avoid downloading and
-retokenizing everything on each comparison. Record title/edition, routes or
-episodes included, source revision, analyzer configuration, and dictionary
-versions. Partial scripts must not appear to represent complete works.
+Extend the existing local corpus cache with route or episode coverage, source
+revision, analyzer configuration, and dictionary versions where available.
+Label partial scripts as partial.
 
-Show unique-entry coverage, remaining eligible mining candidates, Common/JLPT
-breakdowns, and occurrence-weighted coverage where available. Compare titles to
-help choose future material, with missing lists and sample contexts. Reuse the
-sentence-analysis cohort definitions and ambiguity rules.
+Add shared views for comparing prospective titles using the existing missing
+lists and Common/JLPT counts, with sample contexts and occurrence-weighted
+coverage where available. Reuse the sentence-analysis cohort definitions and
+ambiguity rules.
 
 ## 6. Other unimplemented product directions
 
@@ -205,14 +192,14 @@ new-note workflow and need their own explicit scope.
 
 ## 7. Suggested sequence and decisions to settle
 
-Start with sentence-field import and reusable local text analysis, then sentence
-statistics and missing-word inspection. Add candidate batch preparation using
-existing creation safeguards. Reuse that foundation in the existing Media
-library for unread-position tracking and broader source integrations. This is a
+Sentence-field import, basic statistics, and missing-word inspection are
+implemented. Add candidate batch preparation using existing creation safeguards.
+Reuse that foundation in the existing Media library for unread-position tracking
+and broader source integrations. This is a
 dependency-based proposal, and the release order is open.
 
-Before building, settle mining criteria, sentence fields/splitting, the first
-text source/format, analyzer and dictionary, ambiguity handling, reading-progress
-input, and source-sentence copying into new notes. Define unique-entry and token
+Before extending the pipeline, settle mining criteria, how to refine sentence
+splitting and dictionary matching, reading-progress input, and source-sentence
+copying into new notes. Define unique-entry and token
 denominators before publishing percentages. Private scripts, sentences, paths,
 artwork, and derived personal statistics stay outside the public repository.

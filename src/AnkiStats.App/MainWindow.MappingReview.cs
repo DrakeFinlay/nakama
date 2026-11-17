@@ -17,7 +17,7 @@ public partial class MainWindow
         var window = new Window { Owner = this, Title = "Review mappings — Space confirm · 1 manual cleanup", Width = 1180, Height = 800,
             MinWidth = 850, MinHeight = 600, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var layout = new DockPanel { Margin = new Thickness(20) }; window.Content = layout;
-        var heading = new TextBlock { FontSize = 24, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 12), TextWrapping = TextWrapping.Wrap };
+        var heading = Typography.WithContentSize(new TextBlock { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 12), TextWrapping = TextWrapping.Wrap }, 24);
         DockPanel.SetDock(heading, Dock.Top); layout.Children.Add(heading);
         var footer = new StackPanel { Margin = new Thickness(0, 16, 0, 0) }; DockPanel.SetDock(footer, Dock.Bottom); layout.Children.Add(footer);
         var correctionPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 12) }; footer.Children.Add(correctionPanel);
@@ -26,23 +26,23 @@ public partial class MainWindow
         correctionFields.ColumnDefinitions.Add(new() { Width = new GridLength(2, GridUnitType.Star) }); correctionFields.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) });
         var expressionPanel = new StackPanel { Margin = new Thickness(0, 0, 12, 0) }; correctionFields.Children.Add(expressionPanel);
         expressionPanel.Children.Add(new TextBlock { Text = "Expression to save (your English meaning is preserved)" });
-        var correctedExpression = new TextBox { FontSize = 18 }; expressionPanel.Children.Add(correctedExpression);
+        var correctedExpression = Typography.WithContentSize(new TextBox(), 18); expressionPanel.Children.Add(correctedExpression);
         var readingPanel = new StackPanel(); Grid.SetColumn(readingPanel, 1); correctionFields.Children.Add(readingPanel);
         readingPanel.Children.Add(new TextBlock { Text = "Separate reading field (if mapped)" });
-        var correctedReading = new TextBox { FontSize = 18 }; readingPanel.Children.Add(correctedReading); correctionPanel.Children.Add(correctionFields);
+        var correctedReading = Typography.WithContentSize(new TextBox(), 18); readingPanel.Children.Add(correctedReading); correctionPanel.Children.Add(correctionFields);
         var feedback = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10) }; footer.Children.Add(feedback);
         var buttons = new WrapPanel(); footer.Children.Add(buttons);
         var confirm = new Button { Content = "Confirm selected (Space)" }; var defer = new Button { Content = "Manual cleanup (1)" };
         var ignore = new Button { Content = "Ignore item" }; var undo = new Button { Content = "Undo", IsEnabled = false }; var close = new Button { Content = "Close" };
         foreach (var button in new[] { confirm, defer, ignore, undo, close }) buttons.Children.Add(button);
         var sides = new Grid(); sides.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) }); sides.ColumnDefinitions.Add(new() { Width = new GridLength(1, GridUnitType.Star) }); layout.Children.Add(sides);
-        TextBox Detail() => new() { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            FontSize = 19, Padding = new Thickness(14), Background = (System.Windows.Media.Brush)FindResource("Panel"), Foreground = System.Windows.Media.Brushes.White };
+        TextBox Detail() => Typography.WithContentSize(new TextBox { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Padding = new Thickness(14), Background = (System.Windows.Media.Brush)FindResource("Panel"), Foreground = System.Windows.Media.Brushes.White }, 19);
         var original = Detail(); original.Margin = new Thickness(0, 0, 12, 0); sides.Children.Add(original);
         var right = new DockPanel(); Grid.SetColumn(right, 1); sides.Children.Add(right);
         var search = new StackPanel { Margin = new Thickness(0, 0, 0, 10) }; DockPanel.SetDock(search, Dock.Top); right.Children.Add(search);
-        search.Children.Add(new TextBlock { Text = "Proposed dictionary match · select one, or Ctrl-select several", FontSize = 18, TextWrapping = TextWrapping.Wrap });
-        var lookup = new TextBox { FontSize = 18, Margin = new Thickness(0, 8, 0, 6) };
+        search.Children.Add(Typography.WithContentSize(new TextBlock { Text = "Proposed dictionary match · select one, or Ctrl-select several", TextWrapping = TextWrapping.Wrap }, 18));
+        var lookup = Typography.WithContentSize(new TextBox { Margin = new Thickness(0, 8, 0, 6) }, 18);
         System.Windows.Automation.AutomationProperties.SetName(lookup, "Mapping lookup or comma-separated JMdict IDs"); search.Children.Add(lookup);
         var lookupButton = new Button { Content = "Search word / apply dictionary IDs", HorizontalAlignment = HorizontalAlignment.Left }; search.Children.Add(lookupButton);
         var candidates = new ListBox { Height = 140, SelectionMode = SelectionMode.Extended, DisplayMemberPath = "Meaning", Margin = new Thickness(0, 8, 0, 8),

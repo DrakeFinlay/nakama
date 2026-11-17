@@ -44,6 +44,7 @@ public partial class MainWindow : Window
         Loaded += async (_, _) => await Initialize();
         Closed += (_, _) => dayTimer.Stop();
         Closed += (_, _) => mediaCancellation?.Cancel();
+        Closed += (_, _) => sentenceCancellation?.Cancel();
         dayTimer.Tick += async (_, _) =>
         {
             if (!busy && data is not null && Today(data.TimeZoneId) != insightDate)
@@ -59,6 +60,7 @@ public partial class MainWindow : Window
         await Guard(async () =>
         {
             store = new LocalStore();
+            LoadAppearance();
             InitializeMedia();
             UpdateSourceIndicator();
             try { settings = store.LoadSettings(); }
@@ -258,6 +260,9 @@ public partial class MainWindow : Window
         OverviewPage.Visibility = page == "Overview" ? Visibility.Visible : Visibility.Collapsed;
         VocabularyPage.Visibility = page == "Vocabulary" ? Visibility.Visible : Visibility.Collapsed;
         CoveragePage.Visibility = page == "Word Coverage" ? Visibility.Visible : Visibility.Collapsed;
+        var openingSentences = page == "Sentences" && SentencesPage.Visibility != Visibility.Visible;
+        SentencesPage.Visibility = page == "Sentences" ? Visibility.Visible : Visibility.Collapsed;
+        if (openingSentences) ShowRandomSentence();
         MediaPage.Visibility = page == "Media" ? Visibility.Visible : Visibility.Collapsed;
         MappingsPage.Visibility = page == "Mappings" ? Visibility.Visible : Visibility.Collapsed;
         ReviewsPage.Visibility = page == "Reviews" ? Visibility.Visible : Visibility.Collapsed;

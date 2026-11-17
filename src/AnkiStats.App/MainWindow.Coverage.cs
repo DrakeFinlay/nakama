@@ -1,4 +1,6 @@
 using System.IO;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -116,6 +118,57 @@ public partial class MainWindow
         CoverageMatchGrid.ItemsSource = rows;
         CoverageMatchSummary.Text = $"{rows.Count:N0} of {coverage.Matches.Count:N0} mapped vocabulary/grammar notes · {coverage.Unresolved:N0} unresolved · {coverage.ReadingWarnings:N0} reading warnings · {coverage.DefinitionWarnings:N0} definition warnings. "
             + "Corrections persist per collection and note across imports and profile changes. No Anki notes or tags are changed.";
+    }
+
+    private void CopyCoverageTable(object sender, RoutedEventArgs e)
+    {
+        var rows = CoverageGrid.Items.OfType<CoverageCount>().ToArray();
+        if (rows.Length == 0) return;
+
+        var columns = CoverageGrid.Columns.Where(column => column.Visibility == Visibility.Visible)
+            .OrderBy(column => column.DisplayIndex).ToArray();
+        var headers = columns.Select(column => column.Header?.ToString() ?? "").ToArray();
+        var text = new StringBuilder(string.Join('\t', headers));
+        var table = new StringBuilder("<table><thead><tr>");
+        foreach (var header in headers)
+            table.Append("<th>").Append(WebUtility.HtmlEncode(header)).Append("</th>");
+        table.Append("</tr></thead><tbody>");
+        foreach (var row in rows)
+        {
+            var cells = columns.Select(column => column.OnCopyingCellClipboardContent(row)?.ToString() ?? "").ToArray();
+            text.AppendLine().AppendJoin('\t', cells);
+            table.Append("<tr>");
+            foreach (var cell in cells)
+                table.Append("<td>").Append(WebUtility.HtmlEncode(cell)).Append("</td>");
+            table.Append("</tr>");
+        }
+        table.Append("</tbody></table>");
+
+        var clipboard = new DataObject();
+        clipboard.SetData(DataFormats.UnicodeText, text.ToString());
+        clipboard.SetData(DataFormats.Html, FormatClipboardHtml(table.ToString()));
+        try
+        {
+            Clipboard.SetDataObject(clipboard, copy: true);
+            SetStatus("Coverage table copied. Paste it into Google Docs or Sheets.");
+        }
+        catch (ExternalException)
+        {
+            SetStatus("The coverage table could not be copied. Try again.", true);
+        }
+    }
+
+    private static string FormatClipboardHtml(string fragment)
+    {
+        // Windows HTML clipboard offsets are UTF-8 byte positions.
+        const string before = "<html><body><!--StartFragment-->";
+        const string after = "<!--EndFragment--></body></html>";
+        static string Header(int startHtml, int endHtml, int startFragment, int endFragment) => FormattableString.Invariant(
+            $"Version:1.0\r\nStartHTML:{startHtml:D10}\r\nEndHTML:{endHtml:D10}\r\nStartFragment:{startFragment:D10}\r\nEndFragment:{endFragment:D10}\r\n");
+        var startHtml = Header(0, 0, 0, 0).Length;
+        var startFragment = startHtml + before.Length;
+        var endFragment = startFragment + Encoding.UTF8.GetByteCount(fragment);
+        return Header(startHtml, endFragment + after.Length, startFragment, endFragment) + before + fragment + after;
     }
 
     private void ExportMissingCoverage(object sender, RoutedEventArgs e)

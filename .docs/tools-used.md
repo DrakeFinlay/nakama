@@ -16,7 +16,7 @@ This guide describes the tools used by the checked-in implementation. Versions b
 | JMdict via jmdict-simplified | Downloaded English dictionary identities, forms/readings, glosses, and common/preferred-form metadata; separate from application dependencies. |
 | OpenJLPT | Downloaded corrected N5–N1 memberships linked to JMdict IDs; separate from application dependencies. |
 | Jiten | Optional selected-title online vocabulary lists and metadata; no Anki data uploaded. |
-| Python / SudachiPy / SudachiDict-core | Separately installed optional local text morphology; versions recorded per corpus. |
+| Python / SudachiPy / SudachiDict-core | Optional local morphology for Media text and the Sentences missing-word scan. The app records the analyzer version for media corpora and displays it after a sentence scan. |
 | AnkiConnect API v6 | Local HTTP bridge for live collection imports while Anki is open, explicitly requested note creation, and live checks. Closed-file imports and cached analysis work without it. |
 | NuGet | Downloads the project dependencies during restore/build. |
 | PowerShell | Runs the Windows publishing script and creates a normal application shortcut through Windows scripting support. |
@@ -35,8 +35,8 @@ subsequent matching and reporting work offline. No Anki content is sent to inter
 Live imports and explicit note creation use standard .NET HTTP against AnkiConnect API v6 at
 `127.0.0.1:8765`. It requires no additional application library or web backend.
 The reference engine uses standard .NET JSON, HTTP, compression, and SHA-256
-libraries. Optional local media morphology runs a separately installed Python /
-Sudachi environment. Internet access may also be needed for SDK and NuGet
+libraries. Optional local media and sentence scans run a separately installed
+Python/Sudachi environment. Internet access may also be needed for SDK and NuGet
 dependencies when building from source. [Media](media.md) integrates Jiten for
 selected-title vocabulary and artwork; cached comparisons work offline.
 The dictionary and JLPT pins/checksums are in CoverageReferenceStore.cs; their

@@ -80,17 +80,23 @@ Both contain resolved entries absent from mapped Anki vocabulary across all
 decks, including suspended notes. Possible unresolved Anki matches are excluded
 from automatic creation. The active profile does not narrow this presence check.
 
-Minimum titles defaults to 2 and can be set to any positive whole number. Each
-library title counts once per entry, despite spelling variants or repeated
-occurrences. Only Completed corpora contribute to title counts and occurrence
-totals. Ranking is title count descending, then occurrence count descending,
+Import starts with all Completed titles. Open **Titles: All Completed…** to
+check specific titles. To compare a series, search for its name, choose **Select
+all matches**, then **Apply**. Checked titles stay selected as you change the
+search. **Clear selection** followed by **Apply** restores all Completed titles.
+The selection lasts for the current app session.
+
+**Minimum titles** defaults to 2 and counts only titles in the current scope.
+Set it to the number of selected titles to see words that occur in every one.
+Each library title counts once per entry, despite spelling variants or repeated
+occurrences. Ranking is title count descending, then occurrence count descending,
 then dictionary ID for stable ties. Search filters words, readings, definitions
 and source titles without changing ranking. Separate library corpora/editions
 are counted as separate items; duplicate references to the same corpus ID are not.
 
 Use **Preview selected**, **Preview first N**, or **Preview all filtered**. The
-last two follow the current pool, minimum and search filter. Selected rows keep
-the same rank order. These buttons perform live duplicate checks and open the
+last two follow the current title selection, pool, minimum and search filter.
+Selected rows keep the same rank order. These buttons perform live duplicate checks and open the
 existing new-note preview; they do not write until **Create** is clicked there.
 Notes use the existing Japanese model and 日本語::勉強してる deck. Both pools
 require a usable preferred dictionary form and definition. The same global
@@ -132,11 +138,12 @@ Use a Python installation/environment with these optional dependencies:
 python -m pip install SudachiPy SudachiDict-core
 ```
 
-Enter that environment's full Python executable path in Media if `python` is
-not on PATH. The development validation environment, when prepared, is
-`.tools/media-python/Scripts/python.exe`. Python and Sudachi are not bundled in
-the Windows app. No installation happens automatically. Missing dependencies
-produce an error, retaining previously imported titles.
+Media and Sentences share a Python executable setting. Builds run from a
+checkout pick `.tools/media-python/Scripts/python.exe` when present. Other
+builds default to `python`. If needed, enter the full path to a Python executable
+with both dependencies installed. Python and Sudachi are separate installs.
+The sentence scan uses the dictionary lookup and base-reading APIs in SudachiPy 0.7.
+Analyzer errors leave previously imported media titles available.
 
 The embedded helper runs with isolated Python imports (`-I`), receives cleaned
 text on stdin, and returns aggregated surface/lemma/reading/POS records. It uses

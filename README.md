@@ -8,20 +8,29 @@ A local Windows desktop app for exploring Japanese vocabulary and Anki review hi
 
 This project was **vibe coded with Codex**, with human direction and review guiding its design and development.
 
-Phase 1A and Phase 1B are implemented. The app covers safe collection import,
-vocabulary inventory, common/JLPT coverage, missing-word note creation, deck
-profiles, review analysis, Calendar, Time Analysis, Learning Patterns, and daily
-discoveries. Analysis works locally; creating notes is an explicit action through
-AnkiConnect.
+- **Study activity.** Named deck profiles scope Vocabulary, Reviews, Calendar,
+  Time Analysis, Learning Patterns card lists, and daily discoveries. Fast Refresh
+  reuses a local cache when AnkiConnect is available.
+- **Word Coverage and Mappings.** Review Common/JLPT and overall JMdict coverage,
+  copy the coverage table, or export missing-word reports. Inspect uncertain
+  matches, confirm grammar links, and review proposed expression or reading
+  corrections. [Mappings guide](.docs/mappings.md)
+- **Sentences.** Browse card and character totals and a random sentence from
+  `Sentence` fields in 日本語 and its subdecks. An optional local Sudachi scan
+  compares the text with existing vocabulary in that deck tree.
+  [Sentences guide](.docs/USER-GUIDE.md#explore-anki-sentences)
+- **Media.** Search Jiten vocabulary lists or analyze local text with Sudachi.
+  Track Planned, Currently reading, and Completed titles. Compare missing words
+  across all or selected Completed titles, or browse the Word list for an
+  individual title on any shelf. [Media guide](.docs/media.md)
+- **Note creation.** Preview batches from Word Coverage or Media before explicitly
+  creating notes through AnkiConnect. Media batches can include genuine sentences
+  from local scripts when available.
 
-The initial [Media library](.docs/media.md) searches Jiten vocabulary lists or
-analyzes local text with optional Sudachi, caches reading/completed titles, and
-compares Common/JLPT mining opportunities against mapped vocabulary across Anki.
-Media → Import browses shared missing words from completed titles and can prepare
-previewed Anki notes, optionally including genuine local-script sentences.
-Each title's Word list also supports importing selected missing words from any shelf.
-Anki sentence-field analysis and unread-position tracking remain
-[future plans](.docs/FUTURE-PLANS.md).
+Settings lets you adjust sidebar, tab, page, and table font sizes independently.
+The roadmap tracks planned work including sentence-based note preparation,
+unread-position tracking, and historical coverage.
+[Future plans](.docs/FUTURE-PLANS.md)
 
 ## Documentation
 
@@ -34,6 +43,7 @@ Anki sentence-field analysis and unread-position tracking remain
 - [Tools used](.docs/tools-used.md) — languages, libraries, development tools, and build commands.
 - [How the program works](.docs/program-guide.md) — code walkthrough, import/analysis flows, feature internals, storage, and packaging.
 - [Dictionary and coverage](.docs/dictionary-and-coverage.md) — reference downloads, matching, definitions, uncertainty, cohorts, and reports.
+- [Media](.docs/media.md) and [Mappings](.docs/mappings.md) — title acquisition and mining, match review, aliases, and note corrections.
 - [AnkiConnect integration](.docs/anki-connect.md) — API calls, live checks, payloads, HTTP transport, and interrupted-write recovery.
 
 ## Run
@@ -102,6 +112,10 @@ Through N3 includes N5, N4, and N3. Counts use unique linked JMdict entry IDs,
 rather than cards or reference rows. Unlinked JLPT rows are disclosed and excluded.
 OpenJLPT uses corrected community classifications; these can differ from live
 Jisho tags and are not official exam inventories.
+
+Choose **Copy coverage table** to copy the visible columns and all summary rows
+in display order. The clipboard includes an HTML table and tab-separated text
+for pasting into a document or spreadsheet.
 
 Select a row and export a Markdown report for either **not covered** entries
 (outside Known/Familiar) or entries **absent from database**. Reports include

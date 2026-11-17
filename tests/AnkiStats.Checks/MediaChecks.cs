@@ -37,6 +37,17 @@ internal static class MediaChecks
         check(uncommonMining[0].Sentence == "努力に報う。" && uncommonMining[0].SentenceSource == "Local context",
             "a completed-media missing word can use a resolved source sentence from another local library script");
         check(MediaMining.Missing(library, missingCoverage, 1, false).Count == 2, "lower minimum reveals words limited to one completed title");
+        var scopedMining = MediaMining.Missing(library, missingCoverage, 1, true, new HashSet<string> { "a" });
+        check(scopedMining.Select(w => w.EntryId).SequenceEqual(["1000002", "1000006"])
+            && scopedMining.All(w => w.TitleCount == 1 && w.Titles == completedA.Title) && scopedMining[0].Occurrences == 5,
+            "selected completed titles constrain ranking, occurrences, and source titles");
+        var scopedUncommon = MediaMining.Missing(library, missingCoverage, 1, false, new HashSet<string> { "a", "context" });
+        check(scopedUncommon.Count == 1 && scopedUncommon[0].TitleCount == 1 && scopedUncommon[0].Occurrences == 1
+            && scopedUncommon[0].SentenceSource == plannedContext.Title,
+            "selected-title mining excludes other shelves from counts and can still use a local sentence from them");
+        check(MediaMining.Missing(library, missingCoverage, 2, true, new HashSet<string> { "a" }).Count == 0
+            && MediaMining.Missing(library, missingCoverage, 1, true, new HashSet<string> { "removed" }).Count == 0,
+            "minimum applies inside the title selection and unavailable titles never fall back to all completed titles");
         var chosenTitle = completedA with { State = MediaShelves.Reading, Words = [.. completedA.Words,
             new("2005410", "報う", "", 2, "Resolved", Sentence: "努力に報う。"), new(null, "未解決", "", 1, "Unmatched")] };
         var chosen = MediaMining.Selected(chosenTitle, missingCoverage, ["1000002", "2005410", "1000001", "1000004", "not-in-title", "", "1000002"]);
@@ -111,8 +122,49 @@ internal static class MediaChecks
             Entry("OPS/a.xhtml", "<p>山</p>"); Entry("OPS/b.xhtml", "<p>食べる</p>");
         }
         check(LocalMediaText.Read(epub).Replace("\r", "") == "山\n食べる", "EPUB follows spine order rather than archive order");
+        VerifyAnalyzerProcess(check, sandbox).GetAwaiter().GetResult();
         VerifyApi(check, reference).GetAwaiter().GetResult();
     }
+
+    private static async Task VerifyAnalyzerProcess(Action<bool, string> check, string sandbox)
+    {
+        var checkout = Path.Combine(sandbox, "checkout");
+        var appDirectory = Path.Combine(checkout, "artifacts", "Nakama");
+        var appProject = Path.Combine(checkout, "src", "AnkiStats.App", "AnkiStats.App.csproj");
+        Directory.CreateDirectory(appDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(appProject)!);
+        File.WriteAllText(appProject, "");
+        check(LocalMediaText.DefaultPython(appDirectory) == "python", "Python defaults to PATH without a checkout environment");
+        var python = Path.Combine(checkout, ".tools", "media-python", "Scripts", "python.exe");
+        Directory.CreateDirectory(Path.GetDirectoryName(python)!);
+        File.WriteAllText(python, "");
+        check(LocalMediaText.DefaultPython(appDirectory) == python, "checkout app builds default to the prepared Sudachi environment");
+
+        try
+        {
+            await LocalMediaText.Analyze("山", Path.Combine(sandbox, "missing-python.exe"));
+            check(false, "an absent Python executable should fail");
+        }
+        catch (InvalidOperationException error)
+        {
+            check(error.Message.Contains("Could not start Python") && error.Message.Contains("SudachiPy"),
+                "a Python startup failure explains the local analyzer requirement");
+        }
+
+        if (!OperatingSystem.IsWindows()) return;
+        // where.exe exits without reading stdin. Large input guarantees a write past the pipe buffer.
+        try
+        {
+            await LocalMediaText.Analyze(new string('山', 256_000), Path.Combine(Environment.SystemDirectory, "where.exe"));
+            check(false, "an analyzer that exits before reading input should fail");
+        }
+        catch (InvalidDataException error)
+        {
+            check(error.InnerException is IOException && error.Message.Contains("exit code 1") && error.Message.Contains("SudachiDict-core"),
+                "an early analyzer exit reports the process failure instead of the broken pipe");
+        }
+    }
+
     private static async Task VerifyApi(Action<bool, string> check, CoverageReference reference)
     {
         using var http = new HttpClient(new ResponseHandler(request =>

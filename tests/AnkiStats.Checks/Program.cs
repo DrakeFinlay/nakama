@@ -60,6 +60,13 @@ if (args is ["--local-media-smoke", var localReferenceRoot, var pythonPath])
     return;
 }
 if (args is ["--prepare-coverage-reference", var referenceSources, var referenceTarget]) { CoverageChecks.PrepareReference(referenceSources, referenceTarget); return; }
+if (args is ["--check-sentence-tokenizer", var sentenceReferenceRoot, var sentencePython])
+{
+    var reference = new CoverageReferenceStore(sentenceReferenceRoot).Load() ?? throw new InvalidOperationException("Install the reference first.");
+    await SentenceChecks.RunTokenizer(Check, reference, sentencePython);
+    Console.WriteLine($"All {checkCount} sentence tokenizer checks passed.");
+    return;
+}
 if (args is ["--audit-coverage", var coverageReferenceRoot, var appDatabase]) { CoverageChecks.Audit(coverageReferenceRoot, appDatabase); return; }
 if (args.Length >= 4 && args[0] == "--audit-coverage-report") { CoverageChecks.Audit(args[1], args[2], args[3], args.Skip(4)); return; }
 if (args is ["--seed-coverage-ui", var coverageRoot]) { CoverageUiFixture.Create(coverageRoot); Console.WriteLine("Synthetic coverage fixture ready."); return; }
@@ -144,6 +151,7 @@ try
     MappingChecks.Run(Check, sandbox);
     NoteCorrectionChecks.Run(Check, sandbox);
     MediaChecks.Run(Check, sandbox);
+    SentenceChecks.Run(Check, sandbox);
     ProfileChecks.Run(Check, sandbox);
     TimeChecks.Run(Check);
     LearningChecks.Run(Check);
@@ -199,11 +207,15 @@ try
     Check(dstResult.Buckets[0].Answers == 2 && dstResult.Daily.Count == 1, "DST repeated hour");
 
     var store = new LocalStore(Path.Combine(sandbox, "store"));
+    Check(store.LoadAppearance() == new AppearanceSettings(), "existing stores start with default font sizes");
+    var appearance = new AppearanceSettings(82, 113, 129, 148);
+    store.SaveAppearance(appearance);
     store.SaveCache(data);
     Check(store.LoadCache("synthetic")?.Reviews.Count == data.Reviews.Count, "cache roundtrip");
     Check(store.LoadCache("other") is null, "cache cannot cross collection identity");
     store.SaveCache(data, selection);
     Check(store.LoadSettings()?.DeckRules.Count == 2, "settings and results persisted together");
+    Check(new LocalStore(store.Root).LoadAppearance() == appearance, "font sizes persist independently of collection settings and refreshes");
     var csvPath = Path.Combine(sandbox, "synthetic.csv");
     CsvExport.Write(csvPath, [new object?[] { "報いる", "a,b", "=1+1" }]);
     Check(File.ReadAllText(csvPath).Contains("報いる") && File.ReadAllText(csvPath).Contains("'=1+1"), "UTF-8 Japanese export and formula protection");

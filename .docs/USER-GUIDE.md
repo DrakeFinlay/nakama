@@ -7,8 +7,7 @@ what is in your collection, how it overlaps common-word and JLPT lists, and how
 you have been reviewing. You can also preview and create notes for missing words.
 The app is for Windows and stores its analysis locally.
 
-It measures recorded activity and vocabulary coverage, not fluency. Sentence
-analysis is in [future plans](FUTURE-PLANS.md). The initial [Media library](media.md)
+It measures recorded activity and vocabulary coverage, not fluency. The initial [Media library](media.md)
 supports online vocabulary lists and optional local text analysis.
 
 ## Install and open the app
@@ -88,15 +87,16 @@ previewing and saving a refreshed import.
 | --- | --- |
 | Overview | Vocabulary inventory, total answers, ordinary-review Again rate, recorded hours, coverage summary, daily discovery, and review-rhythm charts |
 | Vocabulary | Search/sort entries, inspect supporting note/card IDs by double-clicking, inspect skipped expressions, and export the current table |
-| Word Coverage | Common/JLPT coverage, missing-word reports, match review, stem families, and creation of new vocabulary notes |
-| Media | Reading/completed covers, Jiten title search, local text analysis, and remaining Common/JLPT mining opportunities; see [Media guide](media.md) |
+| Word Coverage | Overall JMdict and Common/JLPT coverage, table copy, missing-word reports, match review, stem families, and new vocabulary notes |
+| Sentences | Card and character totals, a random sentence, and an optional scan for missing words |
+| Media | Title shelves, Jiten search, local text analysis, and mining by individual title or selected Completed titles. [Media guide](media.md) |
 | Mappings | Review uncertain Anki/media matches, confirm grammar links, configure label aliases, and manage manual cleanup; see [Mappings guide](mappings.md) |
 | Reviews | Daily/weekly volume, time-of-day breakdowns, Again rates, response times, and ordinary-review card rankings |
 | Insights | Explore the supported discoveries and their explanations |
 | Calendar | Select a current/historical streak, inspect daily answer counts, and scroll across years |
 | Time Analysis | Explore recorded study hours, ranges, daily/weekly charts, averages, and weekday/hour breakdowns |
 | Learning Patterns | Inspect difficulty candidates, recovery groups, shared patterns, and Japanese/Kanji cross-deck evidence |
-| Settings | Connect the source, edit mappings/profiles/time zone, and open the app-data folder |
+| Settings | Connect the source, edit mappings, profiles, and time zone, adjust font sizes, and open the app-data folder |
 
 Overview's total answers includes learning, review, relearning, and filtered
 answers. Reviews defaults to ordinary reviews, so choose the appropriate event
@@ -108,6 +108,15 @@ discoveries use midnight-based dates. Custom Anki cutoffs are not imported.
 Learning Patterns findings are connections to inspect, not proof of why a card
 was difficult; cross-deck comparisons use both imported Japanese/Kanji trees even
 when another active selection scopes the card list.
+
+## Customize font sizes
+
+Open **Settings → Font sizes** to adjust **Sidebar**, **Inner tabs**, **Page
+content**, and **Tables** independently. Each slider previews changes live from
+75% to 150% in 1% steps. **Save font sizes** keeps the current sizes for future
+sessions without refreshing Anki. To restore the original sizes, choose **Reset
+to defaults** and save. Chart and calendar labels drawn inside the graphics
+retain their own sizing.
 
 ## Use Word Coverage
 
@@ -136,6 +145,10 @@ unresolved possible matches do not count as confirmed. Overview repeats this
 overall count. These totals reuse existing matching results, with no extra Anki
 queries or matching pass. They update with ordinary refresh and profile changes.
 
+Choose **Copy coverage table**, then paste into Google Docs or Sheets. The copy
+includes the column headings and every reference-list row in the table's current
+order.
+
 Select a reference-list row, then choose **Export not covered (.md)** for words
 outside Known/Familiar, or **Export absent from database (.md)** for words without
 a confirmed match in the imported selection. Choose where to save the Markdown
@@ -155,6 +168,36 @@ One valid spelling/reading is enough; you do not need every alternative. Reading
 and Definition warnings can retain coverage while asking you to inspect the
 evidence. Partial matches count only their confirmed portion. Stem families are
 separate conservative groupings and do not change common/JLPT percentages.
+
+## Explore Anki sentences
+
+Open **Sentences** to see how many cards in **日本語** and its subdecks have
+Japanese text in a field named exactly `Sentence`. The character total counts
+visible text per card, including punctuation, and excludes whitespace, markup,
+furigana, and audio markers. Sibling cards each count toward both totals.
+The page picks a random distinct Japanese sentence each time it opens. A field
+with multiple sentences can supply several samples. Refresh older saved results
+to load the Japanese deck tree.
+
+Turn on **Find missing words** to scan Japanese text and compare with mapped
+vocabulary in that same deck tree, including suspended cards and confirmed
+grammar links. The scan ignores English-only sentences and removes Latin
+letters from mixed text before tokenization. It keeps kana loanwords and shows
+the original sentence as context. It skips recognized proper names and elongated
+particles, checks the exact dictionary form and its reading, and keeps adjacent
+kanji or katakana noun fragments together for compound lookup. This runs only
+when you turn the option on. It
+needs the dictionary data from **Word Coverage** and a Python environment with
+[SudachiPy and SudachiDict-core](media.md#local-analyzer-setup). Use the **Python**
+box to select the same executable as Media if needed.
+
+**Missing Common / JLPT** shows resolved missing entries tagged Common or JLPT.
+**Other missing words** shows resolved entries outside those lists. Both show
+occurrence counts and an example where available. Each note's sentence text
+contributes once to the scan, even if several cards share it. **Needs review** shows
+possible names, ambiguous forms, unresolved compounds, forms without an exact
+dictionary match, and possible matches to existing Anki notes. Turning off the option stops an in-progress scan or hides
+the results. Sentences and the analysis stay local.
 
 ## Create missing vocabulary notes
 

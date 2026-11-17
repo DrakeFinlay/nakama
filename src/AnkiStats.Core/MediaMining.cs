@@ -19,7 +19,8 @@ public static class MediaMining
                 examples.GetValueOrDefault(w.EntryId, ""), examples.ContainsKey(w.EntryId) ? corpus.Title : "")).ToList();
     }
 
-    public static List<MediaMiningWord> Missing(IEnumerable<MediaCorpus> library, CoverageAnalysis coverage, int minimumTitles, bool eligible)
+    public static List<MediaMiningWord> Missing(IEnumerable<MediaCorpus> library, CoverageAnalysis coverage, int minimumTitles, bool eligible,
+        IReadOnlySet<string>? selectedTitleIds = null)
     {
         if (minimumTitles < 1) throw new ArgumentOutOfRangeException(nameof(minimumTitles));
         var entries = coverage.Reference.Entries.ToDictionary(e => e.Id);
@@ -30,7 +31,8 @@ public static class MediaMining
                 .Select(w => new { Id = w.EntryId!, w.Sentence, c.Title })).GroupBy(w => w.Id)
             .ToDictionary(g => g.Key, g => g.First());
         // Count a title once even when multiple forms/occurrences map to the same entry.
-        var words = corpora.Where(c => c.State == MediaShelves.Completed).DistinctBy(c => c.Id)
+        var words = corpora.Where(c => c.State == MediaShelves.Completed && (selectedTitleIds is null || selectedTitleIds.Contains(c.Id)))
+            .DistinctBy(c => c.Id)
             .SelectMany(c => c.Words.Where(w => w.EntryId is not null && entries.ContainsKey(w.EntryId) && !excluded.Contains(w.EntryId))
                 .GroupBy(w => w.EntryId!).Select(g => new { Corpus = c, Entry = entries[g.Key], Uses = g.Sum(w => w.Occurrences),
                     Sentence = g.Select(w => w.Sentence).FirstOrDefault(s => !string.IsNullOrWhiteSpace(s)) ?? "" }))

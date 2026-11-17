@@ -11,7 +11,7 @@ public static partial class TextNormalizer
     public static string Clean(string value, bool stripBracketReadings = false)
     {
         value = Replace(value, @"<(script|style)\b[^>]*>.*?</\1>", "");
-        value = Replace(value, @"<rt\b[^>]*>.*?</rt>", "");
+        value = Replace(value, @"<(rt|rp)\b[^>]*>.*?</\1>", "");
         value = Replace(value, @"\[sound:[^\]]*\]", "");
         value = Replace(value, @"<(br\b[^>]*|/div|/p)>", " ");
         value = Replace(value, @"<[^>]*>", "");
