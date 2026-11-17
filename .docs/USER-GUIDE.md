@@ -145,6 +145,10 @@ unresolved possible matches do not count as confirmed. Overview repeats this
 overall count. These totals reuse existing matching results, with no extra Anki
 queries or matching pass. They update with ordinary refresh and profile changes.
 
+Choose **Copy coverage table**, then paste into Google Docs or Sheets. The copy
+includes the column headings and every reference-list row in the table's current
+order.
+
 Select a reference-list row, then choose **Export not covered (.md)** for words
 outside Known/Familiar, or **Export absent from database (.md)** for words without
 a confirmed match in the imported selection. Choose where to save the Markdown

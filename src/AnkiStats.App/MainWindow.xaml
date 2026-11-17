@@ -236,6 +236,7 @@
               </StackPanel></Border>
               <WrapPanel Margin="0,0,0,12"><Button Content="Download / reinstall reference data" Click="DownloadCoverageReference" Margin="0,0,12,8"/><Button Content="Reference sources and rules" Click="ShowCoverageSources" Margin="0,0,0,8"/></WrapPanel>
               <TextBlock x:Name="CoverageStatus" Text="Install the versioned reference data once, then matching and reports work offline. Only public dataset files are downloaded; no Anki data is sent." TextWrapping="Wrap" Margin="0,0,0,12"/>
+              <Button Content="Copy coverage table" Click="CopyCoverageTable" IsEnabled="{Binding HasItems, ElementName=CoverageGrid}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
               <DataGrid x:Name="CoverageGrid" Height="345" SelectionMode="Single" Margin="0,0,0,12" AutomationProperties.Name="Reference list coverage"><DataGrid.Columns>
                 <DataGridTextColumn Header="Reference list" Binding="{Binding List}" Width="110"/>
                 <DataGridTextColumn Header="Known" Binding="{Binding KnownDisplay}" Width="*" MinWidth="180"/>
