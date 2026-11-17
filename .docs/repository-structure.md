@@ -48,8 +48,8 @@ Core media behavior lives in `MediaLibrary.cs`, `JitenClient.cs`, and
 `LocalMediaText.cs`; `media_tokenize.py` is an embedded local Sudachi adapter.
 `MediaChecks.cs` covers the shared corpus, metrics, resolution and API failures.
 `MediaMining.cs` aggregates missing words across Completed corpora;
-`MainWindow.MediaMining.cs` coordinates its Import table, local source-sentence
-enrichment and the shared Anki preview/writer.
+`MainWindow.MediaMining.cs` coordinates title filtering, the Import table,
+local source-sentence enrichment, and the shared Anki preview/writer.
 
 `MainWindow.Mappings.cs` implements the mapping dashboard, filters, aliases and
 cleanup pile; `MainWindow.MappingReview.cs` implements keyboard review and Undo.
@@ -65,12 +65,14 @@ This project produces the executable. It references the core library and uses Wi
 | `AnkiStats.App.csproj` | Defines the Windows desktop project and its core-library reference. |
 | `App.xaml` | Shared colors, control styles, and application startup window. |
 | `App.xaml.cs` | English formatting and a last-resort UI exception handler. |
-| `MainWindow.xaml` | Layout for Overview, Vocabulary, Word Coverage, Reviews, Insights, Calendar, Time Analysis, Learning Patterns, and Settings. |
+| `MainWindow.xaml` | Layout and navigation for the desktop views. |
 | `MainWindow.xaml.cs` | Connects controls to setup, importing, analysis, searching, daily discoveries, and exports. Contains the editable deck and field-mapping choices. |
 | `MainWindow.Profiles.cs` | Coordinates saved deck-profile editing, active selection, scoped results, and overview comparison charts. |
 | `MainWindow.Time.cs` | Connects recorded hours, time-range filters, comparison metrics, time charts, and weekday/hour tables to the active profile. |
 | `MainWindow.Learning.cs` | Filters difficulty cohorts, cross-deck comparisons, shared patterns, and supporting review evidence. |
-| `MainWindow.Coverage.cs` | Connects local reference installation, common/JLPT coverage, missing-word reports, and persistent match/family corrections to the active profile. |
+| `MainWindow.Coverage.cs` | Connects reference installation, coverage display and clipboard copy, missing-word reports, and match/family corrections to the active profile. |
+| `MainWindow.Sentences.cs` | Displays cached sentence totals and samples and coordinates the optional local vocabulary scan. |
+| `MainWindow.Appearance.cs` and `ScaledSizeExtension.cs` | Preview, apply, and save font scaling for the sidebar, inner tabs, page content, and tables. |
 | `MainWindow.Creation.cs` | Previews missing-word batches, requires explicit creation, journals writes, and reconciles pending additions through local AnkiConnect. |
 | `TimeChart.cs` | Draws recorded minutes by day or week with all-history and six-month average reference lines. |
 | `StreakCalendar.cs` | Draws the streak heatmap on one surface with day selection, hover text, and keyboard navigation. |
@@ -95,6 +97,7 @@ This library contains the work that does not require a window. Keeping it separa
 | `LiveCollectionImporter.cs` | Verifies live metadata and home-deck membership, builds and updates the Fast Refresh index, and reads review histories through AnkiConnect. Shares the file importer's projection rules. |
 | `Analysis.cs` | Cleans field text, groups vocabulary entries, calculates review statistics, generates discovery candidates, and writes CSV exports. |
 | `VocabularyCoverage.cs` | Matches expression/reading pairs to restricted dictionary forms, aggregates named-deck cohorts and entry coverage, groups conservative families, and produces Markdown missing-word reports. |
+| `SentenceAnalysis.cs` | Counts and samples Japanese sentence text, invokes local tokenization, and compares resolved entries with the Japanese deck tree's vocabulary. |
 | `VocabularyExpression.cs` | Extracts written forms and explicit reading alternatives, including segment furigana, spacing, numeric headwords, and dictionary-verifiable phonetic joins. |
 | `DefinitionMatcher.cs` | Provides normalized English gloss evidence for homophone resolution, preserving negation and rejecting generic or tied evidence. |
 | `CoverageReferenceStore.cs` | Downloads checksum-verified reference snapshots, builds a local dictionary index, and atomically replaces compressed reference data independently of personal corrections. |
@@ -136,6 +139,7 @@ This is an executable check runner, rather than a project using a separate unit-
 - `AnkiTransportChecks.cs` exercises HTTP framing against a temporary loopback listener, verifying fixed-length JSON requests and actionable protocol errors without contacting real Anki.
 - `LiveImportChecks.cs` covers live import safety, filtered deck membership, and startup's incremental-only path with simulated AnkiConnect responses.
 - `FastRefreshChecks.cs` verifies cache reuse and full-refresh parity with a simulated 16,000-card collection and a 2,000-card update.
+- `SentenceChecks.cs` covers sentence projection, statistics, and missing-word classification. The optional tokenizer checks use a local Python/Sudachi environment and an installed reference bundle.
 
 Ordinary checks use temporary synthetic collections and clean up afterward. Real collections must never become committed test fixtures.
 

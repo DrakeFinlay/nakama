@@ -1,8 +1,8 @@
 # Nakama — Current Design
 
-Status: Phase 1A and Phase 1B are implemented. This document describes the current
-application and its rules. [FUTURE-PLANS.md](FUTURE-PLANS.md) contains unimplemented
-work and ideas; [README.md](../README.md) explains setup and use.
+This document describes the current application and its rules. The
+[roadmap](FUTURE-PLANS.md) tracks remaining work and open design decisions.
+The [README](../README.md) explains setup and use.
 
 For step-by-step operation, see the [user's guide](USER-GUIDE.md). For implementation
 walkthroughs, see [how the program works](program-guide.md),
@@ -18,13 +18,14 @@ create new notes for missing vocabulary.
 
 | Area | Implemented behavior |
 | --- | --- |
-| Desktop | Native dark WPF interface, Japanese text, tables, charts, and a development shortcut that builds the current checkout |
-| Media | Jiten vocabulary search/download, optional local Sudachi text analysis, large reading panels, Planned/Completed shelves, whole-collection mining comparison; see [media](media.md) |
+| Desktop | Dark WPF interface, independent font scaling for sidebar, inner tabs, page content, and tables, and a development shortcut that builds the current checkout |
+| Media | Jiten vocabulary search/download, local Sudachi text analysis, Planned/Currently reading/Completed shelves, whole-collection comparison, and a title filter for the Completed mining pool |
 | Setup and import | Remembered Anki profile, editable deck selections and field mappings, safe snapshots with Anki open or closed, cached recovery after failure |
 | Deck profiles | Named selections, Japanese/Kanji/combined presets when available, shared mappings and time zone, synchronized active-profile selectors |
 | Vocabulary | Distinct expression/reading inventory, search, sorting, supporting note/card IDs, CSV export |
-| Sentences | Card and character totals and a random sample from Japanese text in `Sentence` fields under 日本語. An explicit local Sudachi/JMdict scan compares Japanese-script vocabulary against that deck tree and separates Common/JLPT from other missing words |
-| Word Coverage | JMdict common-word and corrected OpenJLPT N5–N1 coverage, cumulative unions, Markdown missing-word reports, match corrections, conservative stem families |
+| Sentences | Card and character totals, a random Japanese sentence, and an optional scan for missing words in 日本語 and its subdecks |
+| Word Coverage | Overall JMdict and Common/JLPT coverage, cumulative unions, clipboard table copy, Markdown reports, match corrections, and conservative stem families |
+| Mappings | Review uncertain Anki and media forms, confirm grammar links, manage aliases and cleanup, and apply guarded expression/reading corrections to Anki |
 | Note creation | Previewed batches from missing reference entries, Completed media pools, or selected words from a title on any shelf; fixed study deck, live duplicate checks, tag-free notes, interrupted-attempt recovery through AnkiConnect |
 | Reviews | Daily/weekly answer volume, Again rates and recorded response times by time bucket, card rankings |
 | Calendar | Current/historical review streaks and heatmaps using a fixed 4 AM study-day cutoff |
@@ -35,13 +36,7 @@ create new notes for missing vocabulary.
 Phase 1A delivered the desktop/import/inventory/review foundation. Phase 1B added
 reference coverage, matching and reports, and the explicitly requested new-note
 workflow. Calendar, deck profiles, time analysis, and learning patterns are also
-implemented. This does not imply that the broader roadmap is complete.
-
-There is no standalone dictionary browser,
-game-archive extraction, grammar-pattern inventory, or general kanji-knowledge
-score in the current app. Media accepts extracted text and analyzed lists;
-optional local tokenization uses separately installed Sudachi. Existing comparisons involving kanji cards do not
-constitute those broader analyses.
+implemented. The [roadmap](FUTURE-PLANS.md) retains the broader product directions.
 
 ## 2. Collection selection and user experience
 
@@ -70,9 +65,10 @@ Kanji, and combined presets are created when the corresponding trees exist;
 previous selection rules are retained. Settings changes take effect with a
 successful import, and a failed refresh retains the previous cache's scope.
 
-Navigation contains Overview, Vocabulary, Word Coverage, Media, Reviews, Insights,
-Calendar, Time Analysis, Learning Patterns, and Settings. Overview links to
-details and displays a review-rhythm chart for each enabled deck profile. The
+Navigation contains Overview, Vocabulary, Word Coverage, Sentences, Media,
+Mappings, Reviews, Insights, Calendar, Time Analysis, Learning Patterns, and
+Settings. Overview links to details and displays a review-rhythm chart for
+each enabled deck profile. The
 header and Calendar profile selectors stay synchronized. Daily discovery history
 is separate per collection and deck-profile ID.
 
@@ -81,6 +77,11 @@ compatible live cache are available. Otherwise, it keeps the last successful
 scope and timestamp. Inspection, settings preview/save, and manual refresh work
 with Anki open or closed. The source profile is visible, and isolated or
 synthetic sessions display a warning and a distinct window title.
+
+Settings previews font scaling from 75% to 150% in 1% steps for the sidebar,
+inner tabs, page content, and tables. Saving writes app-wide appearance
+preferences to the local store independently of collection settings. Chart and
+calendar graphics use their own label sizes.
 
 ## 3. Vocabulary inventory and reference coverage
 
@@ -103,6 +104,10 @@ snapshot as its denominator. Its Known/Familiar/Combined/In database numerators
 reuse existing distinct matched-ID sets for the active profile, with no extra
 Anki reads or matching pass. Overview repeats the In database fraction. Entries
 outside Common/JLPT membership remain part of this overall denominator.
+
+**Copy coverage table** writes all summary rows in their current order, with
+visible columns in display order, to the Windows clipboard as HTML and
+tab-separated Unicode text.
 
 | Cohort | Current definition |
 | --- | --- |
@@ -185,6 +190,38 @@ matches from entries with no supporting vocabulary. Reports include lookup forms
 optional spelling/reading alternatives, glosses, IDs, source versions, and scope.
 Unresolved candidates are not presented as proven absent.
 
+### Sentence statistics and missing words
+
+The file and live importers collect cleaned text from fields named exactly
+`Sentence` on any note type in 日本語 and its subdecks. That scope is independent
+of the active profile. The cached overview counts cards whose field contains
+Japanese text. Character totals count visible text elements per card, including
+punctuation, and exclude whitespace, markup, and furigana. Sibling cards each
+contribute to the totals. The random sample draws from distinct Japanese
+sentences. Older caches need a refresh to supply these fields.
+
+**Find missing words** reads the Japanese deck tree and its mapped vocabulary
+on demand, without fetching review histories. It tokenizes locally using
+SudachiPy and SudachiDict-core, with one contribution per note. Comparison uses
+exact JMdict forms and readings, saved matching decisions, and confirmed grammar
+links. Confirmed existing entries, including suspended vocabulary, are excluded.
+The results show Common/JLPT and other missing entries, and a review list for
+unresolved forms or possible Anki matches. Rows show occurrence counts and an
+example when available. Incidental sentence tokens contribute no Word Coverage
+credit. The scan and its results stay local.
+
+### Media coverage and title scope
+
+Media caches Jiten vocabulary or local Sudachi analysis by corpus. The
+whole-collection comparison uses mapped Anki notes across all decks, including
+suspended vocabulary. The Import tab ranks resolved missing entries by title
+count, then occurrence count, within the Common/JLPT pool or the pool outside
+both lists. The title picker defaults to all Completed titles and can narrow
+the aggregate to a subset for the current session. The minimum title count
+applies within that selection. Possible Anki matches stay out of the missing
+pool. A single title's Word list supports selection on any shelf.
+[Media guide](media.md)
+
 ## 4. Explicit new-note creation
 
 A positive requested number selects random unique missing entries in this order:
@@ -203,7 +240,7 @@ condensed glosses and a hidden attribution/entry-identity comment. Word Coverage
 batches leave other fields, including Sentence and Media, blank. Media Import
 batches can include a genuine locally analyzed source sentence and source titles
 in the corresponding fields; unavailable sentences remain blank and visible in
-preview. See [Media](media.md) for Completed-only pools/ranking and selection-based
+preview. See [Media](media.md) for Completed-title filtering and selection-based
 imports from an individual title on any shelf. New notes have no tags. Anki's templates
 determine the number of generated cards; daily limits and schedules are unchanged.
 
@@ -355,9 +392,9 @@ The implementation uses C#, .NET 10, WPF/XAML, and Microsoft.Data.Sqlite. WPF dr
 charts directly. Code-behind partials coordinate the desktop UI; the Core library
 contains import, analysis, matching, persistence, and AnkiConnect behavior. The
 check runner exercises Core without requiring real Anki. There is no web backend.
-Optional local media analysis invokes separately installed Python/Sudachi;
-online media vocabulary comes from Jiten. Reference data is a compressed local JSON index, while
-app-owned settings and cached import data use SQLite.
+Optional local sentence and media analysis uses a separate Python/Sudachi
+installation. Online media vocabulary comes from Jiten. Reference data is a
+compressed local JSON index. App-owned settings and cached imports use SQLite.
 
 Long operations run off the UI thread and tables use virtualization. The normal
 development shortcut rebuilds/publishes the current checkout before opening;
@@ -368,10 +405,11 @@ startup/refresh timing promises; no benchmark guarantee is claimed.
 Validation covers metric scopes, dictionary variants and definitions, corrections,
 preferred forms, tier spillover, duplicate prevention, interrupted writes,
 HTTP request framing, source integrity, locking/WAL failures, schema rejection,
-time boundaries, exports, and cache isolation. UI checks use isolated sessions.
+time boundaries, exports, cache isolation, sentence projection and matching, and
+completed-title filtering. UI checks use isolated sessions.
 Live AnkiConnect preview was verified, and the user tested actual creation.
-The last application validation passed 339 checks and a Release build; future
-changes must rerun relevant validation rather than treating that count as a promise.
+The combined application changes passed a Release build, 488 repository checks,
+and three optional Sudachi tokenizer checks on November 17, 2026.
 
 Follow the [development workflow](development-workflow.md) for branch,
 validation, commit, and PR steps. Full installation infrastructure, hosted CI,

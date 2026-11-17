@@ -87,16 +87,16 @@ previewing and saving a refreshed import.
 | --- | --- |
 | Overview | Vocabulary inventory, total answers, ordinary-review Again rate, recorded hours, coverage summary, daily discovery, and review-rhythm charts |
 | Vocabulary | Search/sort entries, inspect supporting note/card IDs by double-clicking, inspect skipped expressions, and export the current table |
-| Word Coverage | Common/JLPT coverage, missing-word reports, match review, stem families, and creation of new vocabulary notes |
+| Word Coverage | Overall JMdict and Common/JLPT coverage, table copy, missing-word reports, match review, stem families, and new vocabulary notes |
 | Sentences | Card and character totals, a random sentence, and an optional scan for missing words |
-| Media | Reading/completed covers, Jiten title search, local text analysis, and remaining Common/JLPT mining opportunities; see [Media guide](media.md) |
+| Media | Title shelves, Jiten search, local text analysis, and mining by individual title or selected Completed titles. [Media guide](media.md) |
 | Mappings | Review uncertain Anki/media matches, confirm grammar links, configure label aliases, and manage manual cleanup; see [Mappings guide](mappings.md) |
 | Reviews | Daily/weekly volume, time-of-day breakdowns, Again rates, response times, and ordinary-review card rankings |
 | Insights | Explore the supported discoveries and their explanations |
 | Calendar | Select a current/historical streak, inspect daily answer counts, and scroll across years |
 | Time Analysis | Explore recorded study hours, ranges, daily/weekly charts, averages, and weekday/hour breakdowns |
 | Learning Patterns | Inspect difficulty candidates, recovery groups, shared patterns, and Japanese/Kanji cross-deck evidence |
-| Settings | Connect the source, edit mappings/profiles/time zone, and open the app-data folder |
+| Settings | Connect the source, edit mappings, profiles, and time zone, adjust font sizes, and open the app-data folder |
 
 Overview's total answers includes learning, review, relearning, and filtered
 answers. Reviews defaults to ordinary reviews, so choose the appropriate event
